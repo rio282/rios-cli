@@ -54,6 +54,10 @@ class RiosCLI(cmd.Cmd):
             print(self.current_directory)
             return
 
+        if directory == ".":
+            print(f"Changed directory to {self.current_directory}")
+            return
+
         if directory == "..":
             self.current_directory = os.path.dirname(self.current_directory)
             print(f"Changed directory to {self.current_directory}")
