@@ -1,0 +1,6 @@
+Flask==3.0.3
+pretty-errors==1.2.25
+colorama==0.4.6
+playsound==1.2.2
+pytube==15.0.0
+moviepy==1.0.3
