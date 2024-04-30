@@ -1,12 +1,14 @@
 import cmd
 import os
+import win32gui, win32con
 
-from colorama import init, Fore, Back
+from colorama import init, Fore
 
 import youtube
 import shutil
 from typing import Final
 from playsound import playsound
+from datetime import date, datetime
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -32,20 +34,36 @@ class RiosCLI(cmd.Cmd):
         init(autoreset=True)
 
         # cli setup
-        self.original_cwd: Final[str] = os.getcwd()
+        self._is_windows: Final[bool] = os.name == "nt"
+        self.clear_command: Final[str] = "cls" if self._is_windows else "clear"
 
-        self.clear_command = "cls" if os.name == "nt" else "clear"
+        self.original_cwd: Final[str] = os.getcwd()
         os.chdir(os.path.expanduser("~/Desktop"))
         self.current_directory: str = os.getcwd()
+
+        if self._is_windows:
+            self._set_fullscreen()
+
+        os.system(f"title Rio's CLI -- {date.today()}")
+
+    def _set_fullscreen(self):
+        hwnd = win32gui.GetForegroundWindow()
+        win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+
+    def _minimize_window(self):
+        hwnd = win32gui.GetForegroundWindow()
+        win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
 
     def postcmd(self, stop, line):
         print()  # add empty line for better readability
         return stop
 
     def do_hello(self, line):
+        """Replies with Hi!"""
         print("Hi!")
 
     def do_ping(self, line):
+        """Replies with Pong!"""
         print("Pong!")
 
     def do_cd(self, directory):
@@ -88,14 +106,14 @@ class RiosCLI(cmd.Cmd):
                 directories.append(entry)
 
         # print out dirs
-        print(f"{Fore.RED}Directories:")
+        print(f"{Fore.GREEN}Directories:")
         print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory
                 for directory in directories], sep="\n")
 
         print()
 
         # print out files
-        print(f"{Fore.RED}Files:")
+        print(f"{Fore.GREEN}Files:")
         formatted_file_info = []
         for file in files:
             filename, file_ext = os.path.splitext(file)
@@ -204,9 +222,26 @@ class RiosCLI(cmd.Cmd):
         else:
             print(Fore.RED + "Something went wrong.")
 
+    def do_now(self, line):
+        """Shows current date (along with day of week) and time."""
+        current_datetime = datetime.now()
+        formatted_date = current_datetime.strftime("%Y-%m-%d")
+        formatted_time = current_datetime.strftime("%H:%M:%S")
+        formatted_day = current_datetime.strftime("%A")
+        print(f"Today is {formatted_day} {formatted_date} and it's currently {formatted_time}.")
+
     def do_yt(self, line):
         """Alias for YouTube."""
         self.do_youtube(line)
+
+    def do_hide(self, line):
+        """Hides (minimizes) console window."""
+        if self._is_windows:
+            print(Fore.RESET + "Sshh!")
+            print(Fore.RESET + "(Cya soon!)")
+            self._minimize_window()
+        else:
+            print(f"{Fore.RED}Windows support only.")
 
     def do_clear(self, line):
         """Clears screen."""
