@@ -10,6 +10,8 @@ from typing import Final
 from playsound import playsound
 from datetime import date, datetime
 
+from server import host, client
+
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
  <|     v\       _<|>_                /v                      /v     v\   <|>            |   
@@ -229,6 +231,20 @@ class RiosCLI(cmd.Cmd):
         formatted_time = current_datetime.strftime("%H:%M:%S")
         formatted_day = current_datetime.strftime("%A")
         print(f"Today is {formatted_day} {formatted_date} and it's currently {formatted_time}.")
+
+    def do_server(self, option):
+        """Allows user to host a server or connect to one. Usage: "server host", "server server", "server client",
+        "server connect"."""
+        option = option.strip()
+
+        if option in ["server", "serve", "s", "host", "h"]:
+            print("Running server...")
+            host.run()
+        elif option in ["client", "connect", "c"]:
+            print("Running client...")
+            client.run()
+        else:
+            print(Fore.RED + "Unknown option. RTM!")
 
     def do_yt(self, line):
         """Alias for YouTube."""

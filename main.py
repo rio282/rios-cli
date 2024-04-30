@@ -1,6 +1,5 @@
 import os
 import sys
-import socket
 
 import pretty_errors
 from typing import Final
@@ -8,13 +7,7 @@ from typing import Final
 from CLI import RiosCLI
 
 ENVIRONMENT: Final[str] = "dev"
-LOCALHOST: Final[str] = "127.0.0.1"
 PRETTY_ERRORS: Final[bool] = True
-
-SERVER_ADDRESS_LOCAL: Final[str] = socket.gethostbyname(socket.gethostname())
-SERVER_ADDRESS_PUBLIC: Final[str] = "UNKNOWN"  # TODO
-WEB_SERVER_PORT: Final[int] = 8000
-ETC_SERVER_PORT: Final[int] = 55555
 
 
 def is_correct_python_version() -> bool:
