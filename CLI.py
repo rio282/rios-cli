@@ -11,6 +11,7 @@ from playsound import playsound
 from datetime import date, datetime
 
 from server import host, client
+from etc import network
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -57,8 +58,12 @@ class RiosCLI(cmd.Cmd):
         win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
 
     def postcmd(self, stop, line):
-        print()  # add empty line for better readability
+        if line.strip() != "":
+            print()  # add empty line for better readability
         return stop
+
+    def emptyline(self):
+        pass
 
     def do_hello(self, line):
         """Replies with Hi!"""
@@ -207,7 +212,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_youtube(self, line):
         """Parses YouTube command(s)."""
-        line = line.split(" ")
+        line = line.split()
         video_url = line[0]
         audio_only = False
 
@@ -236,15 +241,30 @@ class RiosCLI(cmd.Cmd):
         """Opens downloads folder."""
         self.do_open(os.path.expanduser("~/Downloads"))
 
+    def do_network(self, subcommands):
+        """Extensive information about the network when used correctly."""
+        subcommands: list = subcommands.split()
+        subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
+
+        if subcommand == "imap":
+            print(Fore.LIGHTGREEN_EX + "Scanning network...")
+            network.show_imap()
+        else:
+            print(Fore.RED + "Unknown subcommand specified.")
+
+    def do_net(self, line):
+        """Alias for network."""
+        self.do_network(line)
+
     def do_server(self, option):
         """Allows user to host a server or connect to one. Usage: "server host", "server server", "server client",
         "server connect"."""
         option = option.strip()
 
-        if option in ["server", "serve", "s", "host", "h"]:
+        if option in ("server", "serve", "s", "host", "h"):
             print("Running server...")
             host.run()
-        elif option in ["client", "connect", "c"]:
+        elif option in ("client", "connect", "c"):
             print("Running client...")
             client.run()
         else:

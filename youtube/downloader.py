@@ -1,5 +1,4 @@
 import os.path
-import ntpath
 
 import pytube.request
 from pytube import YouTube, Stream
@@ -7,6 +6,7 @@ from pytube import YouTube, Stream
 from moviepy.editor import AudioFileClip
 
 from etc.loading_screen import Loader
+from etc import escape_windows_safe_filename
 
 
 class Downloader:
@@ -26,7 +26,7 @@ class Downloader:
         # prepare
         print("Preparing...")
         yt = YouTube(url, on_progress_callback=self.download_callback)
-        filename = f"{ntpath.normpath(yt.title)}.{file_format}".replace("|", " ")
+        filename = f"{escape_windows_safe_filename(yt.title)}.{file_format}"
         if os.path.exists(filename):
             return False
 
