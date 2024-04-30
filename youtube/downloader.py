@@ -26,7 +26,7 @@ class Downloader:
         # prepare
         print("Preparing...")
         yt = YouTube(url, on_progress_callback=self.download_callback)
-        filename = f"{ntpath.normpath(yt.title)}.{file_format}"
+        filename = f"{ntpath.normpath(yt.title)}.{file_format}".replace("|", " ")
         if os.path.exists(filename):
             return False
 

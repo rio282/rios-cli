@@ -232,6 +232,10 @@ class RiosCLI(cmd.Cmd):
         formatted_day = current_datetime.strftime("%A")
         print(f"Today is {formatted_day} {formatted_date} and it's currently {formatted_time}.")
 
+    def do_downloads(self, line):
+        """Opens downloads folder."""
+        self.do_open(os.path.expanduser("~/Downloads"))
+
     def do_server(self, option):
         """Allows user to host a server or connect to one. Usage: "server host", "server server", "server client",
         "server connect"."""
