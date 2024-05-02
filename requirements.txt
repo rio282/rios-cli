@@ -8,3 +8,4 @@ pywin32==306
 requests==2.31.0
 python3-nmap==1.6.0
 psutil==5.9.8
+anipy-cli==2.7.31
