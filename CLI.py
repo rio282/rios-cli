@@ -242,7 +242,8 @@ class RiosCLI(cmd.Cmd):
         """Opens downloads folder."""
         self.do_open(os.path.expanduser("~/Downloads"))
 
-    def do_prgms(self, subcommands):
+    def do_programs(self, subcommands):
+        """Allows you to interact with certain processes."""
         subcommands = subcommands.split()
         if not subcommands or subcommands[0] == "list":
             running_processes = [process for process in psutil.process_iter() if process.is_running()]
@@ -269,9 +270,13 @@ class RiosCLI(cmd.Cmd):
         else:
             self.default(subcommands)
 
+    def do_prgms(self, line):
+        """Alias for programs."""
+        self.do_programs(line)
+
     def do_network(self, subcommands):
         """Extensive information about the network when used correctly."""
-        subcommands: list = subcommands.split()
+        subcommands = subcommands.split()
         subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
         if network_init_failed:
