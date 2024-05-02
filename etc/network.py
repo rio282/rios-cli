@@ -3,34 +3,33 @@ import platform
 
 from typing import Final
 
-from colorama import Fore, Back
-import scapy.all as scapy
+from colorama import Fore
+
+import nmap3
 
 
 class Network:
     def __init__(self):
-        self.default_ip_range: Final[str] = "192.168.1.1/24"
+        self.fail = False
+        self.nmap = nmap3.NmapHostDiscovery()
+
+        self.default_gateway: Final[str] = "192.168.1.0"
+        self.default_ip_range: Final[str] = f"{self.default_gateway}/24"
         self.ssid = self._get_current_ssid()
 
     def _get_current_ssid(self):
         system = platform.system()
-        if system == "Windows":
-            try:
+        try:
+            if system == "Windows":
                 output = subprocess.check_output(["netsh", "wlan", "show", "interfaces"]).decode("utf-8")
                 ssid_line = [line.strip() for line in output.split("\n") if "SSID" in line][0]
                 ssid = ssid_line.split(": ")[1]
                 return ssid
-            except subprocess.CalledProcessError:
-                return "<UNKNOWN>"
-        elif system == "Linux":
-            try:
+            elif system == "Linux":
                 output = subprocess.check_output(["iwgetid"]).decode("utf-8")
                 ssid = output.split('"')[1]
                 return ssid
-            except subprocess.CalledProcessError:
-                return "<UNKNOWN>"
-        elif system == "Darwin":
-            try:
+            elif system == "Darwin":
                 output = subprocess.check_output([
                     "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport",
                     "-I"
@@ -38,31 +37,21 @@ class Network:
                 ssid_line = [line for line in output.split("\n") if "SSID:" in line][0]
                 ssid = ssid_line.split(": ")[1]
                 return ssid
-            except subprocess.CalledProcessError:
+            else:
                 return "<UNKNOWN>"
-        else:
+        except subprocess.CalledProcessError:
             return "<UNKNOWN>"
 
-    def _scan_network(self, ip_range: str) -> list[dict[str, str]]:
-        arp_request = scapy.ARP(pdst=ip_range)
-        broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
-        arp_request_broadcast = broadcast / arp_request
-        answered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)[0]
-
+    def _scan_network(self) -> list[str]:
         results = []
 
-        for element in answered_list:
-            result = {"ip": element[1].psrc, "mac": element[1].hwsrc}
-            results.append(result)
+        results = self.nmap.nmap_arp_discovery(self.default_gateway, args="-sn")
 
         return results
 
     def show_imap(self) -> None:
-        print(Fore.RED + Back.WHITE + "TODO")
-        devices = self._scan_network(self.default_ip_range)
+        devices = self._scan_network()
 
         print(f"{Fore.GREEN}Found {len(devices)} devices in network {self.ssid}.")
         for device in devices:
-            ip = device["ip"]
-            mac = device["mac"]
-            print(f"{Fore.GREEN}{ip} | {Fore.LIGHTCYAN_EX}{mac}")
+            print(f"{Fore.GREEN}{device}")

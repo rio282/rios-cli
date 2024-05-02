@@ -1,8 +1,9 @@
 import cmd
 import os
+import psutil
 import win32gui, win32con
 
-from colorama import init, Fore
+from colorama import init, Fore, Back
 
 import youtube
 import shutil
@@ -11,7 +12,7 @@ from playsound import playsound
 from datetime import date, datetime
 
 from server import host, client
-from etc import network
+from etc import network, network_init_failed
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -126,10 +127,10 @@ class RiosCLI(cmd.Cmd):
             filename, file_ext = os.path.splitext(file)
             f_filename = f"{filename}{Fore.LIGHTBLACK_EX}{file_ext}"
             try:
-                file_size = os.stat(f"{filename}{file_ext}").st_size / (1024 * 1024)
-                file_size_rounded = float(f"{file_size:.2f}")
+                file_size_mb = os.stat(f"{filename}{file_ext}").st_size / (1024 * 1024)
+                file_size_mb_rounded = float(f"{file_size_mb:.2f}")
 
-                f_file_size = f"{Fore.CYAN}{file_size_rounded}MB" if file_size_rounded > 0 else f"{Fore.CYAN}~{file_size_rounded}MB"
+                f_file_size = f"{Fore.CYAN}{file_size_mb_rounded}MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded}MB"
                 formatted_file_info.append(f"{f_filename} {f_file_size}")
             except FileNotFoundError:
                 formatted_file_info.append(f"{f_filename} {Fore.CYAN}__.__MB")
@@ -241,12 +242,44 @@ class RiosCLI(cmd.Cmd):
         """Opens downloads folder."""
         self.do_open(os.path.expanduser("~/Downloads"))
 
+    def do_prgms(self, subcommands):
+        subcommands = subcommands.split()
+        if not subcommands or subcommands[0] == "list":
+            running_processes = [process for process in psutil.process_iter() if process.is_running()]
+            running_processes.sort(key=lambda process: process.name())
+
+            for process in running_processes:
+                print(f"{Fore.LIGHTBLACK_EX}{process.pid:<5} {Fore.RESET}{process.name()}")
+
+        elif subcommands[0] == "kill":
+            if len(subcommands) != 2:
+                print(Fore.RED + "Invalid use of command.")
+                return
+
+            prgm_to_kill = subcommands[1]
+            killed = False
+            for process in psutil.process_iter():
+                if process.name().lower() == prgm_to_kill.lower():
+                    process.kill()
+                    print(f"{Fore.GREEN}Killed {process.name()} ({process.pid})")
+                    killed = True
+
+            if not killed:
+                print(f"{Fore.RED}Couldn't find program '{prgm_to_kill}'.")
+        else:
+            self.default(subcommands)
+
     def do_network(self, subcommands):
         """Extensive information about the network when used correctly."""
         subcommands: list = subcommands.split()
         subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
+        if network_init_failed:
+            print(Fore.RED + "Network initialization failed. Are you sure you installed everything correctly?")
+            return
+
         if subcommand == "imap":
+            print(Fore.RED + Back.WHITE + "TODO")
             print(Fore.LIGHTGREEN_EX + "Scanning network...")
             network.show_imap()
         else:
