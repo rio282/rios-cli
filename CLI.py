@@ -11,8 +11,7 @@ from typing import Final
 from playsound import playsound
 from datetime import date, datetime
 
-from server import host, client
-from etc import network, network_init_failed
+from etc import network, music_player
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -38,25 +37,26 @@ class RiosCLI(cmd.Cmd):
         init(autoreset=True)
 
         # cli setup
-        self._is_windows: Final[bool] = os.name == "nt"
-        self.clear_command: Final[str] = "cls" if self._is_windows else "clear"
+        self.__is_windows: Final[bool] = os.name == "nt"
+        self.clear_command: Final[str] = "cls" if self.__is_windows else "clear"
 
+        # paths
         self.original_cwd: Final[str] = os.getcwd()
         os.chdir(os.path.expanduser("~/Desktop"))
         self.current_directory: str = os.getcwd()
 
-        if self._is_windows:
-            self._set_fullscreen()
+        # windows full screen
+        if self.__is_windows:
+            self.hwnd = win32gui.GetForegroundWindow()
+            self.__set_fullscreen()
 
         os.system(f"title Rio's CLI -- {date.today()}")
 
-    def _set_fullscreen(self):
-        hwnd = win32gui.GetForegroundWindow()
-        win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
+    def __set_fullscreen(self):
+        win32gui.ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
 
-    def _minimize_window(self):
-        hwnd = win32gui.GetForegroundWindow()
-        win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+    def __minimize_window(self):
+        win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
 
     def postcmd(self, stop, line):
         if line.strip() != "":
@@ -69,6 +69,10 @@ class RiosCLI(cmd.Cmd):
     def do_hello(self, line):
         """Replies with Hi!"""
         print("Hi!")
+
+    def do_hi(self, line):
+        """Replies with Hello!"""
+        print("Hello!")
 
     def do_ping(self, line):
         """Replies with Pong!"""
@@ -91,7 +95,7 @@ class RiosCLI(cmd.Cmd):
 
         new_dir = os.path.join(self.current_directory, directory)
         if os.path.exists(new_dir) and os.path.isdir(new_dir):
-            self.current_directory = new_dir
+            self.current_directory = os.path.join(self.current_directory, os.path.basename(new_dir))
             os.chdir(self.current_directory)
             print(f"Changed directory to {self.current_directory}")
         else:
@@ -242,6 +246,40 @@ class RiosCLI(cmd.Cmd):
         """Opens downloads folder."""
         self.do_open(os.path.expanduser("~/Downloads"))
 
+    def do_music(self, line):
+        """Opens music folder."""
+        self.do_open(os.path.expanduser("~/Music"))
+
+    def do_videos(self, line):
+        """Opens videos folder."""
+        self.do_open(os.path.expanduser("~/Videos"))
+
+    def do_play(self, filename):
+        """Plays video in preferred program OR plays audio in the background."""
+        file_path = os.path.join(self.current_directory, filename)
+        if os.path.isdir(file_path):
+            raise NotImplemented
+
+        video_extensions = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm"]
+        audio_extensions = ["mp3", "wav", "flac", "aac", "ogg", "wma", "m4a", "aiff", "ape"]
+
+        try:
+            file_extension = os.path.splitext(file_path)[1].removeprefix(".").lower()
+            if file_extension in video_extensions:
+                self.do_open(file_path)
+            elif file_extension in audio_extensions:
+                music_player.play(file_path)
+            else:
+                print(Fore.RED + "Unrecognized video/audio format.")
+        except FileNotFoundError:
+            print(f"File '{filename}' not found.")
+        except Exception as e:
+            print(f"Error trying to open file: {e}")
+
+    def do_volume(self, line):
+        """Adjusts volume for windows or built-in music player."""
+        raise NotImplemented
+
     def do_programs(self, subcommands):
         """Allows you to interact with certain processes."""
         subcommands = subcommands.split()
@@ -283,10 +321,9 @@ class RiosCLI(cmd.Cmd):
             print(Fore.RED + "Network initialization failed. Are you sure you installed everything correctly?")
             return
 
-        if subcommand == "imap":
-            print(Fore.RED + Back.WHITE + "TODO")
-            print(Fore.LIGHTGREEN_EX + "Scanning network...")
-            network.show_imap()
+        if subcommand == "keys":
+            ssid_password = network.get_ssid_password()
+            print(Fore.GREEN + ssid_password)
         else:
             print(Fore.RED + "Unknown subcommand specified.")
 
@@ -294,30 +331,16 @@ class RiosCLI(cmd.Cmd):
         """Alias for network."""
         self.do_network(line)
 
-    def do_server(self, option):
-        """Allows user to host a server or connect to one. Usage: "server host", "server server", "server client",
-        "server connect"."""
-        option = option.strip()
-
-        if option in ("server", "serve", "s", "host", "h"):
-            print("Running server...")
-            host.run()
-        elif option in ("client", "connect", "c"):
-            print("Running client...")
-            client.run()
-        else:
-            print(Fore.RED + "Unknown option. RTM!")
-
     def do_yt(self, line):
         """Alias for YouTube."""
         self.do_youtube(line)
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""
-        if self._is_windows:
+        if self.__is_windows:
             print(Fore.RESET + "Sshh!")
             print(Fore.RESET + "(Cya soon!)")
-            self._minimize_window()
+            self.__minimize_window()
         else:
             print(f"{Fore.RED}Windows support only.")
 

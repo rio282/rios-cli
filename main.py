@@ -1,6 +1,5 @@
 import os
 import sys
-import platform
 
 import pretty_errors
 from typing import Final
@@ -26,7 +25,7 @@ def main(argc: int, argv: list[str]) -> None:
 
         cli = RiosCLI()
 
-        os.system(clear_command)
+        os.system(cli.clear_command)
         cli.cmdloop()
     except KeyboardInterrupt:
         print("\nExit via KeyboardInterrupt (CTRL+C).")
@@ -57,8 +56,6 @@ if __name__ == "__main__":
         raise EnvironmentError(
             f"Incorrect Python version. Min required: {min_required_python_version['major']}.{min_required_python_version['minor']}.0"
         )
-
-    clear_command = "cls" if platform.system() == "Windows" else "clear"
 
     # main & exit
     main(len(sys.argv), sys.argv)

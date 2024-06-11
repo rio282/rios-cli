@@ -1,5 +1,4 @@
-from .network import Network
+from .music_player import MusicPlayer
 from .utils import escape_windows_safe_filename
 
-network = Network()
-network_init_failed = network.fail
+music_player = MusicPlayer()

@@ -1,4 +1,3 @@
-Flask==3.0.3
 pretty-errors==1.2.25
 colorama==0.4.6
 playsound==1.2.2
@@ -6,6 +5,6 @@ pytube==15.0.0
 moviepy==1.0.3
 pywin32==306
 requests==2.31.0
-python3-nmap==1.6.0
 psutil==5.9.8
 anipy-cli==2.7.31
+python-vlc==3.0.20123
