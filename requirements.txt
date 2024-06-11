@@ -1,10 +1,19 @@
+# general
 pretty-errors==1.2.25
 colorama==0.4.6
+
+# media
 playsound==1.2.2
 pytube==15.0.0
 moviepy==1.0.3
-pywin32==306
-requests==2.31.0
-psutil==5.9.8
-anipy-cli==2.7.31
 python-vlc==3.0.20123
+
+# system
+pywin32==306
+psutil==5.9.8
+
+# networking
+requests==2.31.0
+
+# etc
+anipy-cli==2.7.31
