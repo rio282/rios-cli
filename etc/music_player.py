@@ -20,10 +20,10 @@ class MusicPlayer:
         else:
             self.playing = True
             print(f"{Fore.GREEN}Playing {audio_file}")
-            self.player_thread = Thread(target=self._play_audio, args=(audio_file,))
+            self.player_thread = Thread(target=self.__play_audio, args=(audio_file,))
             self.player_thread.start()
 
-    def _play_audio(self, audio_file: str):
+    def __play_audio(self, audio_file: str):
         vlc_instance = vlc.Instance("--no-xlib")
         player = vlc_instance.media_player_new()
 

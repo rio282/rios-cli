@@ -4,7 +4,6 @@ import platform
 from typing import Final
 
 
-
 class Network:
     def __init__(self):
         self.fail = False

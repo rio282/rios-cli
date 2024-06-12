@@ -1,5 +1,7 @@
 import cmd
 import os
+from pprint import pprint
+
 import psutil
 import win32gui, win32con
 
@@ -12,6 +14,7 @@ from playsound import playsound
 from datetime import date, datetime
 
 from etc import network, music_player
+from services.email_service import EmailService
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -227,7 +230,7 @@ class RiosCLI(cmd.Cmd):
         elif len(line) == 2 and line.pop() == "audio":
             audio_only = True
 
-        success = youtube.downloader.download(video_url, audio_only)
+        success = youtube.youtube_downloader.download(video_url, audio_only)
         print()
         if success:
             print(Fore.GREEN + "Download completed!")
@@ -317,10 +320,6 @@ class RiosCLI(cmd.Cmd):
         subcommands = subcommands.split()
         subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
-        if network_init_failed:
-            print(Fore.RED + "Network initialization failed. Are you sure you installed everything correctly?")
-            return
-
         if subcommand == "keys":
             ssid_password = network.get_ssid_password()
             print(Fore.GREEN + ssid_password)
@@ -334,6 +333,25 @@ class RiosCLI(cmd.Cmd):
     def do_yt(self, line):
         """Alias for YouTube."""
         self.do_youtube(line)
+
+    def do_email(self, subcommands):
+        """Checks email."""
+        parts = subcommands.split()
+
+        # parse credentials
+        imap_server = parts[0]
+
+        credentials = parts[1].split(":")
+        email_address = credentials[0]
+        password = credentials[1]
+
+        # run the actual service
+        email_service = EmailService(imap_server=imap_server, email_address=email_address, password=password)
+        if email_service.do_login():
+            pprint(email_service.get_all_emails())
+        else:
+            print(Fore.RED + f"Email Service failed to log into {email_address} on server {imap_server}")
+        email_service.do_logout()
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""
