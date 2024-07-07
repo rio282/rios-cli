@@ -12,6 +12,7 @@ python-vlc==3.0.20123
 pywin32==306
 psutil==5.9.8
 pyserial==3.5
+pyreadline3==3.4.1
 
 # networking
 requests==2.31.0
