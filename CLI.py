@@ -309,16 +309,16 @@ class RiosCLI(cmd.Cmd):
                 print(Fore.RED + "Invalid use of command.")
                 return
 
-            prgm_to_kill = subcommands[1]
+            proc = subcommands[1]
             killed = False
             for process in psutil.process_iter():
-                if process.name().lower() == prgm_to_kill.lower():
+                if process.name().lower() == proc.lower():
                     process.kill()
                     print(f"{Fore.GREEN}Killed {process.name()} ({process.pid})")
                     killed = True
 
             if not killed:
-                print(f"{Fore.RED}Couldn't find program '{prgm_to_kill}'.")
+                print(f"{Fore.RED}Couldn't find process '{proc}'.")
         else:
             self.default(subcommands)
 
