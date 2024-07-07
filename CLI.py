@@ -112,7 +112,7 @@ class RiosCLI(cmd.Cmd):
             if directory == "--inspect-cache":
                 file_cache = file_system.file_cache
                 dir_cache = file_system.directory_cache
-                
+
                 print(f"{Fore.GREEN}Dir cache:")
                 pprint(dir_cache if dir_cache else "Empty.")
                 print()
