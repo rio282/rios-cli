@@ -104,7 +104,7 @@ class RiosCLI(cmd.Cmd):
 
         new_dir = file_system.clean_directory(directory)
         if os.path.exists(new_dir) and os.path.isdir(new_dir):
-            self.current_directory = os.path.join(self.current_directory, os.path.basename(new_dir))
+            self.current_directory = new_dir
             os.chdir(self.current_directory)
             print(f"Changed directory to {self.current_directory}")
         else:
