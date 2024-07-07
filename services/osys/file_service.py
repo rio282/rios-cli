@@ -10,7 +10,8 @@ class FileSystem:
         self.directory_cache: Dict[str, List[str]] = {}
         self.load_cache()
 
-    def clean_directory(self, directory: str) -> str:
+    @staticmethod
+    def clean_directory(directory: str) -> str:
         """
         Cleans and converts a given directory path to an absolute path.
 
