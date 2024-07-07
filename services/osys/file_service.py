@@ -16,6 +16,7 @@ class FileSystem:
         Cleans and converts a given directory path to an absolute path.
 
         The method processes the input directory path to ensure it is in the correct format:
+        - Converts forward slashes to backward slashes for consistency.
         - If the directory starts with "C:\", it returns the absolute path.
         - If the directory starts with "~\", it replaces it with the user's home directory.
         - If neither of the above conditions are met, it returns the path relative to the current working directory.
@@ -23,7 +24,7 @@ class FileSystem:
         :param directory: The directory path to be cleaned and converted.
         :return: The absolute path of the given directory.
         """
-        directory = directory.replace(":", ":\\")
+        directory = directory.replace("/", "\\")
         if directory.startswith("C:\\"):
             return os.path.abspath(directory)
         elif directory.startswith("~\\"):
