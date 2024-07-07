@@ -23,7 +23,8 @@ class FileSystem:
         Gets the files within a directory along with their respective file size in Megabytes.
         If anything fails an error will be thrown with a corresponding error message.
 
-        :param directory: the directory of which the files are requested
+        :param directory: The directory of which the files are requested
+        :param use_cache: Makes call use the cache (if available) instead of checking again
         :return: Returns a list of tuples that contain: [filename, file_size] in this order
         """
         directory = self.__clean_directory(directory)
@@ -54,7 +55,8 @@ class FileSystem:
         Gets the directories within a directory.
         If anything fails an error will be thrown with a corresponding error message.
 
-        :param directory: the directory of which the directories are requested
+        :param directory: The directory of which the directories are requested
+        :param use_cache: Makes call use the cache (if available) instead of checking again
         :return: Returns a list of directories' names
         """
         directory = self.__clean_directory(directory)
