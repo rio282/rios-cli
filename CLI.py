@@ -13,8 +13,6 @@ from typing import Final
 from playsound import playsound
 from datetime import date, datetime
 
-from etc import music_player
-
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
  <|     v\       _<|>_                /v                      /v     v\   <|>            |   
@@ -170,17 +168,18 @@ class RiosCLI(cmd.Cmd):
                 with open(file_path, "w"):
                     print(f"File '{filename}' created in {self.current_directory}")
         except Exception as e:
-            print("An unknown error occurred:", e)
+            self.__on_error(e)
 
     def do_mkdir(self, directory_name):
         """Create a new directory in the current directory."""
         directory_path = os.path.join(self.current_directory, directory_name)
         if os.path.exists(directory_path):
-            print(
-                f"Directory '{directory_name}' already exists in directory '{directory_path.removesuffix(directory_name)}'")
-        else:
-            os.mkdir(directory_path)
-            print(f"Created directory at: {directory_path}")
+            directory_path = directory_path.removesuffix(directory_name)
+            print(f"Directory '{directory_name}' already exists in directory '{directory_path}'")
+            return
+
+        os.mkdir(directory_path)
+        print(f"Created directory at: {directory_path}")
 
     def do_check(self, filename):
         """Read the contents of a text file in the current directory."""
@@ -189,9 +188,9 @@ class RiosCLI(cmd.Cmd):
             with open(file_path, "r") as existing_file:
                 print(existing_file.read())
         except FileNotFoundError:
-            print(f"File '{filename}' not found.")
+            raise FileNotFoundError(f"File '{filename}' not found.")
         except Exception as e:
-            print(f"Error trying to read file: {e}")
+            self.__on_error(e)
 
     def do_remove(self, filename):
         """Removes a file or directory."""
@@ -207,8 +206,8 @@ class RiosCLI(cmd.Cmd):
                 os.remove(file_path)
 
             print(f"Removed: {file_path}")
-        except PermissionError:
-            print("Access denied.")
+        except PermissionError as e:
+            self.__on_error(e)
 
     def do_rm(self, filename):
         """Alias for remove."""
@@ -260,7 +259,7 @@ class RiosCLI(cmd.Cmd):
         self.do_open(os.path.expanduser("~/Videos"))
 
     def do_play(self, filename):
-        """Plays video in preferred program OR plays audio in the background."""
+        """Plays video in OS-preferred program."""
         file_path = os.path.join(self.current_directory, filename)
         if os.path.isdir(file_path):
             raise NotImplemented
@@ -272,20 +271,18 @@ class RiosCLI(cmd.Cmd):
             file_extension = os.path.splitext(file_path)[1].removeprefix(".").lower()
             if file_extension in video_extensions:
                 self.do_open(file_path)
-            elif file_extension in audio_extensions:
-                music_player.play(file_path)
             else:
                 print(Fore.RED + "Unrecognized video/audio format.")
         except FileNotFoundError:
-            print(f"File '{filename}' not found.")
+            raise FileNotFoundError(f"File '{filename}' not found.")
         except Exception as e:
-            print(f"Error trying to open file: {e}")
+            self.__on_error(e)
 
     def do_volume(self, line):
-        """Adjusts volume for windows or built-in music player."""
+        """Adjusts volume for windows."""
         raise NotImplemented
 
-    def do_programs(self, subcommands):
+    def do_processes(self, subcommands):
         """Allows you to interact with certain processes."""
         subcommands = subcommands.split()
         if not subcommands or subcommands[0] == "list":
@@ -313,21 +310,24 @@ class RiosCLI(cmd.Cmd):
         else:
             self.default(subcommands)
 
-    def do_prgms(self, line):
-        """Alias for programs."""
-        self.do_programs(line)
+    def do_procs(self, line):
+        """Alias for processes."""
+        self.do_processes(line)
 
     def do_network(self, subcommands):
         """Extensive information about the network when used correctly."""
-        subcommands = subcommands.split()
-        subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
+        try:
+            subcommands = subcommands.split()
+            subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
-        print("WIP!")
-        # if subcommand == "keys":
-        #     ssid_password = network.get_ssid_password()
-        #     print(Fore.GREEN + ssid_password)
-        # else:
-        #     print(Fore.RED + "Unknown subcommand specified.")
+            # if subcommand == "keys":
+            #     ssid_password = network.get_ssid_password()
+            #     print(Fore.GREEN + ssid_password)
+            # else:
+            #     print(Fore.RED + "Unknown subcommand specified.")
+            raise NotImplemented
+        except Exception as e:
+            self.__on_error(e)
 
     def do_net(self, line):
         """Alias for network."""
