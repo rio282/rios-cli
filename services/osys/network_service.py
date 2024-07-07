@@ -12,7 +12,11 @@ class Network:
         self.default_ip_range: Final[str] = f"{self.default_gateway}/24"
         self.ssid = self.get_current_ssid()
 
-    def get_current_ssid(self):
+    def get_current_ssid(self) -> str:
+        """
+        Shows what SSID we're currently connected to
+        :return: The SSID we're connected to OR "<UNKNOWN>".
+        """
         system = platform.system()
         try:
             if system == "Windows":
@@ -38,5 +42,9 @@ class Network:
             return "<UNKNOWN>"
 
     def get_ssid_password(self) -> str:
+        """
+        Shows the password of the connected SSID
+        :return: The password of the SSID we're connected to OR "<UNKNOWN>".
+        """
         # TODO
         return "<UNKNOWN>"

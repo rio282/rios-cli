@@ -8,6 +8,10 @@ class Loader:
         self.percent_completed: int = 0
 
     def update_loader(self, progress: float) -> None:
+        """
+        Sets the loading bar value.
+        :param progress: Value between 0 and 100(%).
+        """
         if 0 <= progress <= 100:
             self.percent_completed = progress
         else:
@@ -16,6 +20,9 @@ class Loader:
         self.display_loading_bar()
 
     def display_loading_bar(self) -> None:
+        """
+        Displays the loading bar.
+        """
         completed_length = int(self.percent_completed / 100 * self.bar_length)
         empty_length = self.bar_length - completed_length
         bar = f"[{'#' * completed_length}{' ' * empty_length}]"
