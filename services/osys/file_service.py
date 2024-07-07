@@ -11,6 +11,17 @@ class FileSystem:
         self.load_cache()
 
     def __clean_directory(self, directory: str) -> str:
+        """
+        Cleans and converts a given directory path to an absolute path.
+
+        The method processes the input directory path to ensure it is in the correct format:
+        - If the directory starts with "C:\", it returns the absolute path.
+        - If the directory starts with "~\", it replaces it with the user's home directory.
+        - If neither of the above conditions are met, it returns the path relative to the current working directory.
+
+        :param directory: The directory path to be cleaned and converted.
+        :return: The absolute path of the given directory.
+        """
         directory = directory.replace(":", ":\\")
         if directory.startswith("C:\\"):
             return os.path.abspath(directory)
@@ -23,9 +34,9 @@ class FileSystem:
         Gets the files within a directory along with their respective file size in Megabytes.
         If anything fails an error will be thrown with a corresponding error message.
 
-        :param directory: The directory of which the files are requested
-        :param use_cache: Makes call use the cache (if available) instead of checking again
-        :return: Returns a list of tuples that contain: [filename, file_size] in this order
+        :param directory: The directory of which the files are requested.
+        :param use_cache: Makes call use the cache (if available) instead of checking again.
+        :return: Returns a list of tuples that contain: [filename, file_size] in this order.
         """
         directory = self.__clean_directory(directory)
 
@@ -55,9 +66,9 @@ class FileSystem:
         Gets the directories within a directory.
         If anything fails an error will be thrown with a corresponding error message.
 
-        :param directory: The directory of which the directories are requested
-        :param use_cache: Makes call use the cache (if available) instead of checking again
-        :return: Returns a list of directories' names
+        :param directory: The directory of which the directories are requested.
+        :param use_cache: Makes call use the cache (if available) instead of checking again.
+        :return: Returns a list of directories' names.
         """
         directory = self.__clean_directory(directory)
 
