@@ -276,10 +276,13 @@ class RiosCLI(cmd.Cmd):
 
         try:
             file_extension = os.path.splitext(file_path)[1].removeprefix(".").lower()
+
+            # TODO
             if file_extension in video_extensions:
                 self.do_open(file_path)
             elif file_extension in audio_extensions:
                 self.do_open(file_path)
+
             else:
                 print(Fore.RED + "Unrecognized video/audio format.")
         except FileNotFoundError:
