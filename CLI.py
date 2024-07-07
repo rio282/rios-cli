@@ -1,20 +1,19 @@
 import cmd
 import os
-from pprint import pprint
 
 import psutil
 import win32gui, win32con
 
-from colorama import init, Fore, Back
+from colorama import init, Fore
+from pprint import pprint
 
-import youtube
+from services import youtube, file_system
 import shutil
 from typing import Final
 from playsound import playsound
 from datetime import date, datetime
 
-from etc import network, music_player
-from services.email_service import EmailService
+from etc import music_player
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -54,6 +53,9 @@ class RiosCLI(cmd.Cmd):
             self.__set_fullscreen()
 
         os.system(f"title Rio's CLI -- {date.today()}")
+
+    def __on_error(self, error_exception: Exception):
+        print(f"{Fore.RED}[!] An error has occurred: {error_exception}")
 
     def __set_fullscreen(self):
         win32gui.ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
@@ -106,43 +108,47 @@ class RiosCLI(cmd.Cmd):
 
     def do_ls(self, directory):
         """Lists the files and directories in a directory."""
-        files = []
-        directories = []
+        try:
+            if directory == "--inspect-cache":
+                file_cache = file_system.file_cache
+                dir_cache = file_system.directory_cache
+                
+                print(f"{Fore.GREEN}Dir cache:")
+                pprint(dir_cache if dir_cache else "Empty.")
+                print()
+                print(f"{Fore.GREEN}File cache:")
+                pprint(file_cache if file_cache else "Empty.")
+                return
 
-        if directory and not os.path.exists(directory):
-            print(f"Directory '{directory}' doesn't exist.")
-            return
+            files = file_system.get_files_in_directory(directory)
+            directories = file_system.get_directories_in_directory(directory)
 
-        cd = self.current_directory if not directory else directory.replace(":", ":\\")  # to fix weird bug
-        for entry in os.listdir(cd):
-            if os.path.isfile(os.path.join(cd, entry)):
-                files.append(entry)
-            elif os.path.isdir(os.path.join(cd, entry)):
-                directories.append(entry)
+            # print out dirs
+            print(f"{Fore.GREEN}Directories:")
+            print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory
+                    for directory in directories], sep="\n")
 
-        # print out dirs
-        print(f"{Fore.GREEN}Directories:")
-        print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory
-                for directory in directories], sep="\n")
+            print()
 
-        print()
+            # print out files
+            print(f"{Fore.GREEN}Files:")
+            formatted_file_info = []
+            for file in files:
+                file, file_size = file
+                filename, file_ext = os.path.splitext(file)
 
-        # print out files
-        print(f"{Fore.GREEN}Files:")
-        formatted_file_info = []
-        for file in files:
-            filename, file_ext = os.path.splitext(file)
-            f_filename = f"{filename}{Fore.LIGHTBLACK_EX}{file_ext}"
-            try:
-                file_size_mb = os.stat(f"{filename}{file_ext}").st_size / (1024 * 1024)
-                file_size_mb_rounded = float(f"{file_size_mb:.2f}")
+                # format filename
+                f_filename = f"{filename}{Fore.LIGHTBLACK_EX}{file_ext}"
 
+                # format file size
+                file_size_mb_rounded = float(f"{file_size:.2f}")
                 f_file_size = f"{Fore.CYAN}{file_size_mb_rounded}MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded}MB"
-                formatted_file_info.append(f"{f_filename} {f_file_size}")
-            except FileNotFoundError:
-                formatted_file_info.append(f"{f_filename} {Fore.CYAN}__.__MB")
 
-        print(*formatted_file_info, sep="\n")
+                formatted_file_info.append(f"{f_filename} {f_file_size}")
+
+            print(*formatted_file_info, sep="\n")
+        except Exception as e:
+            self.__on_error(e)
 
     def do_open(self, filename):
         """Opens a file in the specified path."""
@@ -166,7 +172,7 @@ class RiosCLI(cmd.Cmd):
         except Exception as e:
             print("An unknown error occurred:", e)
 
-    def do_createf(self, directory_name):
+    def do_mkdir(self, directory_name):
         """Create a new directory in the current directory."""
         directory_path = os.path.join(self.current_directory, directory_name)
         if os.path.exists(directory_path):
@@ -175,14 +181,6 @@ class RiosCLI(cmd.Cmd):
         else:
             os.mkdir(directory_path)
             print(f"Created directory at: {directory_path}")
-
-    def do_created(self, directory_name):
-        """Alias for createf (create folder)."""
-        self.do_createf(directory_name)
-
-    def do_mkdir(self, directory_name):
-        """Alias for createf."""
-        self.do_created(directory_name)
 
     def do_check(self, filename):
         """Read the contents of a text file in the current directory."""
@@ -211,6 +209,10 @@ class RiosCLI(cmd.Cmd):
             print(f"Removed: {file_path}")
         except PermissionError:
             print("Access denied.")
+
+    def do_rm(self, filename):
+        """Alias for remove."""
+        self.do_remove(filename)
 
     def do_fart(self, line):
         """Plays fart sound."""
@@ -320,11 +322,12 @@ class RiosCLI(cmd.Cmd):
         subcommands = subcommands.split()
         subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
-        if subcommand == "keys":
-            ssid_password = network.get_ssid_password()
-            print(Fore.GREEN + ssid_password)
-        else:
-            print(Fore.RED + "Unknown subcommand specified.")
+        print("WIP!")
+        # if subcommand == "keys":
+        #     ssid_password = network.get_ssid_password()
+        #     print(Fore.GREEN + ssid_password)
+        # else:
+        #     print(Fore.RED + "Unknown subcommand specified.")
 
     def do_net(self, line):
         """Alias for network."""
@@ -333,25 +336,6 @@ class RiosCLI(cmd.Cmd):
     def do_yt(self, line):
         """Alias for YouTube."""
         self.do_youtube(line)
-
-    def do_email(self, subcommands):
-        """Checks email."""
-        parts = subcommands.split()
-
-        # parse credentials
-        imap_server = parts[0]
-
-        credentials = parts[1].split(":")
-        email_address = credentials[0]
-        password = credentials[1]
-
-        # run the actual service
-        email_service = EmailService(imap_server=imap_server, email_address=email_address, password=password)
-        if email_service.do_login():
-            pprint(email_service.get_all_emails())
-        else:
-            print(Fore.RED + f"Email Service failed to log into {email_address} on server {imap_server}")
-        email_service.do_logout()
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""
