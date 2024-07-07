@@ -7,7 +7,7 @@ import win32gui, win32con
 from colorama import init, Fore
 from pprint import pprint
 
-from services import youtube, file_system, network
+from services import youtube, file_system, network, com
 import shutil
 from typing import Final
 from playsound import playsound
@@ -102,7 +102,7 @@ class RiosCLI(cmd.Cmd):
             print(f"Changed directory to {self.current_directory}")
             return
 
-        new_dir = os.path.join(self.current_directory, directory)
+        new_dir = file_system.clean_directory(directory)
         if os.path.exists(new_dir) and os.path.isdir(new_dir):
             self.current_directory = os.path.join(self.current_directory, os.path.basename(new_dir))
             os.chdir(self.current_directory)
@@ -343,6 +343,14 @@ class RiosCLI(cmd.Cmd):
     def do_net(self, line):
         """Alias for network."""
         self.do_network(line)
+
+    def do_com(self, subcommand):
+        if subcommand == "scan":
+            connections = com.connected
+            print(f"{Fore.GREEN}Connections:")
+            print(*connections)
+        else:
+            self.default(subcommand)
 
     def do_yt(self, line):
         """Alias for YouTube."""

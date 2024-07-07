@@ -4,7 +4,7 @@ import platform
 from typing import Final
 
 
-class Network:
+class NetworkService:
     def __init__(self):
         self.fail = False
 

@@ -10,7 +10,7 @@ class FileSystem:
         self.directory_cache: Dict[str, List[str]] = {}
         self.load_cache()
 
-    def __clean_directory(self, directory: str) -> str:
+    def clean_directory(self, directory: str) -> str:
         """
         Cleans and converts a given directory path to an absolute path.
 
@@ -38,7 +38,7 @@ class FileSystem:
         :param use_cache: Makes call use the cache (if available) instead of checking again.
         :return: Returns a list of tuples that contain: [filename, file_size] in this order.
         """
-        directory = self.__clean_directory(directory)
+        directory = self.clean_directory(directory)
 
         # checks if dir exists
         if directory and not os.path.exists(directory):
@@ -70,7 +70,7 @@ class FileSystem:
         :param use_cache: Makes call use the cache (if available) instead of checking again.
         :return: Returns a list of directories' names.
         """
-        directory = self.__clean_directory(directory)
+        directory = self.clean_directory(directory)
 
         # checks if dir exists
         if directory and not os.path.exists(directory):
