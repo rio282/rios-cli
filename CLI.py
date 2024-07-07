@@ -7,7 +7,7 @@ import win32gui, win32con
 from colorama import init, Fore
 from pprint import pprint
 
-from services import youtube, file_system
+from services import youtube, file_system, network
 import shutil
 from typing import Final
 from playsound import playsound
@@ -332,12 +332,11 @@ class RiosCLI(cmd.Cmd):
             subcommands = subcommands.split()
             subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
-            # if subcommand == "keys":
-            #     ssid_password = network.get_ssid_password()
-            #     print(Fore.GREEN + ssid_password)
-            # else:
-            #     print(Fore.RED + "Unknown subcommand specified.")
-            raise NotImplemented
+            if subcommand == "keys":
+                ssid_password = network.get_ssid_password()
+                print(Fore.GREEN + ssid_password)
+            else:
+                print(Fore.RED + "Unknown subcommand specified.")
         except Exception as e:
             self.__on_error(e)
 
