@@ -17,7 +17,8 @@ class FileSystem:
 
         The method processes the input directory path to ensure it is in the correct format:
         - Converts forward slashes to backward slashes for consistency.
-        - If the directory starts with "C:\", it returns the absolute path.
+        - Ensures the drive letter is uppercase.
+        - If the directory starts with a drive letter (e.g., "C:\"), it returns the absolute path.
         - If the directory starts with "~\", it replaces it with the user's home directory.
         - If neither of the above conditions are met, it returns the path relative to the current working directory.
 
@@ -25,11 +26,17 @@ class FileSystem:
         :return: The absolute path of the given directory.
         """
         directory = directory.replace("/", "\\")
-        if directory.startswith("C:\\"):
-            return os.path.abspath(directory)
+
+        # ensure that the drive letter is uppercase
+        if len(directory) > 1 and directory[1] == ":":
+            directory = directory[0].upper() + directory[1:]
+
+        # real honestly
+        if os.path.isabs(directory):
+            return os.path.realpath(os.path.abspath(directory))
         elif directory.startswith("~\\"):
-            return os.path.join(os.path.expanduser("~"), directory.removeprefix("~\\"))
-        return os.path.join(os.getcwd(), directory)
+            return os.path.realpath(os.path.join(os.path.expanduser("~"), directory.removeprefix("~\\")))
+        return os.path.realpath(os.path.join(os.getcwd(), directory))
 
     def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[Tuple[str, float]] or None:
         """
