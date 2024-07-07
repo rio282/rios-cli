@@ -1,11 +1,14 @@
 import os
+import pickle
 from typing import List, Tuple, Dict
 
 
 class FileSystem:
-    def __init__(self):
+    def __init__(self, cache_file: str):
+        self.cache_file = cache_file
         self.file_cache: Dict[str, List[Tuple[str, float]]] = {}
         self.directory_cache: Dict[str, List[str]] = {}
+        self.load_cache()
 
     def __clean_directory(self, directory: str) -> str:
         directory = directory.replace(":", ":\\")
@@ -15,7 +18,7 @@ class FileSystem:
             return os.path.join(os.path.expanduser("~"), directory.removeprefix("~\\"))
         return os.path.join(os.getcwd(), directory)
 
-    def get_files_in_directory(self, directory: str) -> List[Tuple[str, float]] or None:
+    def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[Tuple[str, float]] or None:
         """
         Gets the files within a directory along with their respective file size in Megabytes.
         If anything fails an error will be thrown with a corresponding error message.
@@ -33,8 +36,8 @@ class FileSystem:
             raise NotADirectoryError(f"Directory '{directory}' doesn't exist.")
 
         # checks if dir is available in cache
-        if directory in self.directory_cache:
-            return self.directory_cache[directory]
+        if use_cache and directory in self.file_cache:
+            return self.file_cache[directory]
 
         files = []
         for entry in os.listdir(directory):
@@ -46,7 +49,7 @@ class FileSystem:
         self.file_cache[directory] = files
         return files
 
-    def get_directories_in_directory(self, directory: str) -> List[str] or None:
+    def get_directories_in_directory(self, directory: str, use_cache: bool = False) -> List[str] or None:
         """
         Gets the directories within a directory.
         If anything fails an error will be thrown with a corresponding error message.
@@ -63,7 +66,7 @@ class FileSystem:
             raise NotADirectoryError(f"Directory '{directory}' doesn't exist.")
 
         # checks if dir is available in cache
-        if directory in self.directory_cache:
+        if use_cache and directory in self.directory_cache:
             return self.directory_cache[directory]
 
         directories = []
@@ -75,5 +78,23 @@ class FileSystem:
         self.directory_cache[directory] = directories
         return directories
 
-    def save_cache(self, cache_file: str) -> None:
-        raise NotImplementedError
+    def save_cache(self) -> None:
+        """
+        Saves the cache to a file.
+        """
+        try:
+            with open(file=self.cache_file, mode="wb") as f:
+                pickle.dump({"file_cache": self.file_cache, "directory_cache": self.directory_cache}, f)
+        except Exception as e:
+            print("Couldn't save cache.")
+            print(e)
+
+    def load_cache(self) -> None:
+        """
+        Loads the cache from a file.
+        """
+        if os.path.exists(self.cache_file):
+            with open(file=self.cache_file, mode="rb") as f:
+                cache_data = pickle.load(f)
+                self.file_cache = cache_data.get("file_cache", {})
+                self.directory_cache = cache_data.get("directory_cache", {})

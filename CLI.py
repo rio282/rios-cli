@@ -66,6 +66,12 @@ class RiosCLI(cmd.Cmd):
             print()  # add empty line for better readability
         return stop
 
+    def preloop(self):
+        pass
+
+    def postloop(self):
+        file_system.save_cache()
+
     def emptyline(self):
         pass
 
@@ -118,8 +124,9 @@ class RiosCLI(cmd.Cmd):
                 pprint(file_cache if file_cache else "Empty.")
                 return
 
-            files = file_system.get_files_in_directory(directory)
-            directories = file_system.get_directories_in_directory(directory)
+            use_cache = "--use-cache" in directory
+            files = file_system.get_files_in_directory(directory, use_cache)
+            directories = file_system.get_directories_in_directory(directory, use_cache)
 
             # print out dirs
             print(f"{Fore.GREEN}Directories:")
