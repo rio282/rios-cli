@@ -57,10 +57,16 @@ class RiosCLI(cmd.Cmd):
     def __change_prompt_prefix_to(self, prefix: str = ""):
         is_path = "C:\\" in prefix
         is_in_user_directory = os.path.expanduser("~") in prefix
-        if is_path and is_in_user_directory:
+        is_desktop_directory = prefix == os.path.abspath(os.path.expanduser("~/Desktop"))
+
+        if is_desktop_directory:
+            prefix = ""
+        elif is_path and is_in_user_directory:
             prefix = prefix.replace(os.path.expanduser("~"), "~")
 
-        self.prompt = f"{Fore.WHITE}{prefix} ~$ "
+        if prefix != "":
+            prefix += " "
+        self.prompt = f"{Fore.WHITE}{prefix}~$ "
 
     def __on_error(self, error_exception: Exception):
         print(f"{Fore.RED}[!] An error has occurred: {error_exception}")
@@ -72,6 +78,7 @@ class RiosCLI(cmd.Cmd):
         win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
 
     def list_files(self, files):
+        print()
         print(f"{Fore.GREEN}Files:")
         formatted_file_info = []
         max_length = 32
@@ -91,10 +98,10 @@ class RiosCLI(cmd.Cmd):
         print(*formatted_file_info, sep="\n")
 
     def list_directories(self, directories):
+        print()
         print(f"{Fore.GREEN}Directories:")
         print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
                 directories], sep="\n")
-        print()
 
     def postcmd(self, stop, line):
         if line.strip() != "":
