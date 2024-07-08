@@ -8,7 +8,7 @@ from pprint import pprint
 
 from psutil._common import bytes2human
 
-from etc.utils import truncate_filename
+from etc.utils import truncate_filename, AutoCompletion
 from services import youtube, file_system, network, com, processes, statistics
 import shutil
 from typing import Final
@@ -79,15 +79,6 @@ class RiosCLI(cmd.Cmd):
 
     def __minimize_window(self):
         win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
-
-    def autocomplete_path(self, text, line, begidx, endidx):
-        if not text:
-            return [d for d in os.listdir(self.current_directory) if
-                    os.path.isdir(os.path.join(self.current_directory, d))]
-
-        text_lower = text.lower()
-        return [d for d in os.listdir(self.current_directory) if
-                d.lower().startswith(text_lower) and os.path.isdir(os.path.join(self.current_directory, d))]
 
     def list_files(self, files):
         print()
@@ -163,7 +154,8 @@ class RiosCLI(cmd.Cmd):
             print(f"Directory '{directory}' does not exist.")
 
     def complete_cd(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
+                                                AutoCompletion.DIRECTORIES)
 
     def do_ls(self, directory):
         """Lists the files and directories in a directory."""
@@ -201,7 +193,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
+                                                AutoCompletion.DIRECTORIES)
 
     def do_open(self, filename):
         """Opens a file in the specified path."""
@@ -212,6 +205,9 @@ class RiosCLI(cmd.Cmd):
             print(f"File '{filename}' not found.")
         except Exception as e:
             print(f"Error trying to open file: {e}")
+
+    def complete_open(self, text, line, begidx, endidx):
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
 
     def do_create(self, filename):
         """Create a new file in the current directory."""
@@ -248,14 +244,16 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_inspect(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
+                                                AutoCompletion.FILES)
 
     def do_read(self, filename):
         """Alias for inspect."""
         self.do_inspect(filename)
 
     def complete_read(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
+                                                AutoCompletion.FILES)
 
     def do_remove(self, filename):
         """Removes a file or directory."""
@@ -275,14 +273,14 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_remove(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
 
     def do_rm(self, filename):
         """Alias for remove."""
         self.do_remove(filename)
 
     def complete_rm(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
 
     def do_zip(self, directory):
         """Zips a directory. (Subcommands available)"""
@@ -300,7 +298,7 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_zip(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
 
     def do_unzip(self, zip_file):
         """Unzips a directory."""
@@ -311,7 +309,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_unzip(self, text, line, begidx, endidx):
-        return self.autocomplete_path(text, line, begidx, endidx)
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
+                                                AutoCompletion.FILES)
 
     def do_fart(self, line):
         """Plays fart sound."""
