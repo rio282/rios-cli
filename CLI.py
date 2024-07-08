@@ -6,7 +6,9 @@ import win32gui, win32con
 from colorama import init, Fore
 from pprint import pprint
 
-from services import youtube, file_system, network, com, processes
+from psutil._common import bytes2human
+
+from services import youtube, file_system, network, com, processes, statistics
 import shutil
 from typing import Final
 from playsound import playsound
@@ -374,9 +376,38 @@ class RiosCLI(cmd.Cmd):
         """Alias for processes."""
         self.do_processes(line)
 
-    def do_ustats(self):
+    def do_ustats(self, line):
         """Usage statistics."""
-        pass
+        stats = statistics.all
+        align_length = 20
+
+        cpu_usage = f"{stats['cpu_percent']:.1f}%"
+        memory_usage = f"{stats['memory_info'].percent:.1f}%"
+        disk_usage = f"{stats['disk_usage'].percent:.1f}%"
+
+        memory_used = f"{bytes2human(stats['memory_info'].used)} / {bytes2human(stats['memory_info'].total)}"
+        memory_free = f"{bytes2human(stats['memory_info'].free)}"
+
+        disk_used = f"{bytes2human(stats['disk_usage'].used)} / {bytes2human(stats['disk_usage'].total)}"
+        disk_free = f"{bytes2human(stats['disk_usage'].free)}"
+
+        print()
+        print(
+            Fore.WHITE +
+            f"{''.ljust(8)} {'CPU'.ljust(align_length)} {'Memory'.ljust(align_length)} {'Disk'.ljust(align_length)}"
+        )
+        print(
+            Fore.WHITE +
+            f"{'Usage:'.rjust(8)}{Fore.RESET} {cpu_usage.ljust(align_length)} {memory_usage.ljust(align_length)} {disk_usage.ljust(align_length)}"
+        )
+        print(
+            Fore.WHITE +
+            f"{'Used:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_used.ljust(align_length)} {disk_used.ljust(align_length)}"
+        )
+        print(
+            Fore.WHITE +
+            f"{'Free:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_free.ljust(align_length)} {disk_free.ljust(align_length)}"
+        )
 
     def do_network(self, subcommands):
         """Extensive information about the network when used correctly."""

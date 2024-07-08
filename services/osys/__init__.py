@@ -77,5 +77,10 @@ class ProcessManager:
 
 
 class StatisticsService:
-    def __init__(self):
-        self.cache = {}
+    @property
+    def all(self):
+        return {
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory_info": psutil.virtual_memory(),
+            "disk_usage": psutil.disk_usage("/")
+        }
