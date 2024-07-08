@@ -55,17 +55,20 @@ class RiosCLI(cmd.Cmd):
         os.system(f"title Rio's CLI -- {date.today()}")
 
     def __change_prompt_prefix_to(self, prefix: str = ""):
-        is_path = "C:\\" in prefix
-        is_in_user_directory = os.path.expanduser("~") in prefix
-        is_desktop_directory = prefix == os.path.abspath(os.path.expanduser("~/Desktop"))
+        users_directory = "C:\\Users\\"
+        user_directory = os.path.expanduser("~")
+        user_home_directory = os.path.abspath(os.path.expanduser("~/Desktop"))
 
-        if is_desktop_directory:
+        if prefix == user_home_directory:
             prefix = ""
-        elif is_path and is_in_user_directory:
-            prefix = prefix.replace(os.path.expanduser("~"), "~")
+        elif prefix.startswith(users_directory):
+            prefix = prefix.replace(users_directory, "u:")
+        elif prefix == user_directory:
+            prefix = "~"
 
         if prefix != "":
             prefix += " "
+
         self.prompt = f"{Fore.WHITE}{prefix}~$ "
 
     def __on_error(self, error_exception: Exception):
