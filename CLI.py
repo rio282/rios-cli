@@ -9,7 +9,7 @@ from pprint import pprint
 from psutil._common import bytes2human
 
 from etc.utils import truncate_filename, AutoCompletion
-from services import youtube, file_system, network, com, processes, statistics, web_searcher
+from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
 import shutil
 from typing import Final
 from playsound import playsound
@@ -473,10 +473,28 @@ class RiosCLI(cmd.Cmd):
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
-        # TODO: make search web and search local (to search on pc)
-        print(f"Searching the web for: '{query.strip()}'...")
-        results = web_searcher.search(query)
-        print(*results, sep="\n")
+        query = query.strip()
+
+        if "--local" in query:
+            query = query.replace("--local", "").strip()
+            print(f"Searching locally for: '{query}'...")
+            print()
+
+            print("Local search results:")
+            results = local_searcher.search(query)
+            for result in results:
+                print(f"\t{result.ranking}. {result}")
+        elif "--web" in query:
+            query = query.replace("--web", "").strip()
+            print(f"Searching the web for: '{query}'...")
+            print()
+
+            print("Web search results:")
+            results = web_searcher.search(query)
+            for result in results:
+                print(f"\t{result.ranking}. {result}")
+        else:
+            self.default(query)
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""

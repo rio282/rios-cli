@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class SearchResult:
+class WebSearchResult:
     def __init__(self, title: str, href: str, ranking: int = -1):
         self.title = title
         self.href = href
@@ -25,7 +25,7 @@ class WebSearcher(ABC):
         self.query_url: Final[str] = query_url
 
     @abstractmethod
-    def search(self, query: str) -> List[SearchResult]:
+    def search(self, query: str) -> List[WebSearchResult]:
         pass
 
     def querify(self, search_query: str) -> str:
@@ -38,7 +38,7 @@ class DuckDuckGo(WebSearcher, ABC):
     def __init__(self, query_url: str):
         super().__init__(query_url)
 
-    def search(self, query: str) -> List[SearchResult]:
+    def search(self, query: str) -> List[WebSearchResult]:
         search_url = self.querify(query)
 
         response = requests.get(search_url, headers=self.headers)
@@ -52,7 +52,7 @@ class DuckDuckGo(WebSearcher, ABC):
         for index, result in enumerate(web_results, start=1):
             title = result.get_text()
             href = result.get("href")
-            search_result = SearchResult(title, href, ranking=index)
+            search_result = WebSearchResult(title, href, ranking=index)
             search_results.append(search_result)
 
         return search_results
