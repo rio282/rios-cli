@@ -56,15 +56,12 @@ class RiosCLI(cmd.Cmd):
 
     def __change_prompt_prefix_to(self, prefix: str = ""):
         users_directory = "C:\\Users\\"
-        user_directory = os.path.expanduser("~")
         user_home_directory = os.path.abspath(os.path.expanduser("~/Desktop"))
 
         if prefix == user_home_directory:
             prefix = ""
         elif prefix.startswith(users_directory):
             prefix = prefix.replace(users_directory, "u:")
-        elif prefix == user_directory:
-            prefix = "~"
 
         if prefix != "":
             prefix += " "
