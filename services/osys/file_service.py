@@ -25,7 +25,7 @@ class FileSystem:
         :param directory: The directory path to be cleaned and converted.
         :return: The absolute path of the given directory.
         """
-        directory = directory.replace("/", "\\")
+        directory = directory.replace("/", "\\").replace("--use-cache", "").strip()
 
         # ensure that the drive letter is uppercase
         if len(directory) > 1 and directory[1] == ":":
