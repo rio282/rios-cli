@@ -8,6 +8,7 @@ from pprint import pprint
 
 from psutil._common import bytes2human
 
+from etc.utils import truncate_filename
 from services import youtube, file_system, network, com, processes, statistics
 import shutil
 from typing import Final
@@ -70,6 +71,31 @@ class RiosCLI(cmd.Cmd):
     def __minimize_window(self):
         win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
 
+    def list_files(self, files):
+        print(f"{Fore.GREEN}Files:")
+        formatted_file_info = []
+        max_length = 32
+        for file in files:
+            file, file_size = file
+            filename, file_ext = os.path.splitext(file)
+
+            padding_length = max_length - len(filename) - len(file_ext)
+            file_size_mb_rounded = float(f"{file_size:.2f}")
+
+            f_filename = truncate_filename(filename, file_ext, max_length)
+            f_file_size = f"{Fore.CYAN}{file_size_mb_rounded} MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded} MB"
+            filename_padding = f"{Fore.LIGHTBLACK_EX}{'-' * padding_length}{Fore.RESET}"
+
+            formatted_file_info.append(f"{f_filename}{filename_padding} | {f_file_size}")
+
+        print(*formatted_file_info, sep="\n")
+
+    def list_directories(self, directories):
+        print(f"{Fore.GREEN}Directories:")
+        print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
+                directories], sep="\n")
+        print()
+
     def postcmd(self, stop, line):
         if line.strip() != "":
             print()  # add empty line for better readability
@@ -128,20 +154,12 @@ class RiosCLI(cmd.Cmd):
 
     def do_ls(self, directory):
         """Lists the files and directories in a directory."""
-
-        def truncate_filename(fn: str, fe: str, max_length: int = 32) -> str:
-            combined_length = len(fn) + len(fe)
-            if combined_length >= max_length:
-                truncate_length = max_length - len(fe) - 3  # 3 characters for >>>
-                fn = fn[:truncate_length] + ">>>"
-            return f"{fn}{Fore.LIGHTBLACK_EX}{fe}{Fore.RESET}"
-
         try:
             if directory == "--inspect-cache":
                 file_cache = file_system.file_cache
                 dir_cache = file_system.directory_cache
 
-                print(f"{Fore.GREEN}Dir cache:")
+                print(f"{Fore.GREEN}Directory cache:")
                 pprint(dir_cache if dir_cache else "Empty.")
                 print()
                 print(f"{Fore.GREEN}File cache:")
@@ -150,46 +168,22 @@ class RiosCLI(cmd.Cmd):
 
             print_dirs = False
             print_files = False
+            use_cache = "--use-cache" in directory
 
             if "--dirs" in directory:
                 print_dirs = True
             if "--files" in directory:
                 print_files = True
-
             if not print_dirs and not print_files:
                 print_dirs = True
                 print_files = True
 
-            use_cache = "--use-cache" in directory
-
             if print_dirs:
-                # print out dirs
                 directories = file_system.get_directories_in_directory(directory, use_cache)
-                print(f"{Fore.GREEN}Directories:")
-                print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
-                        directories], sep="\n")
-                print()
-
-            # print out files
+                self.list_directories(directories)
             if print_files:
                 files = file_system.get_files_in_directory(directory, use_cache)
-                print(f"{Fore.GREEN}Files:")
-                formatted_file_info = []
-                max_length = 32
-                for file in files:
-                    file, file_size = file
-                    filename, file_ext = os.path.splitext(file)
-
-                    padding_length = max_length - len(filename) - len(file_ext)
-                    file_size_mb_rounded = float(f"{file_size:.2f}")
-
-                    f_filename = truncate_filename(filename, file_ext, max_length)
-                    f_file_size = f"{Fore.CYAN}{file_size_mb_rounded} MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded} MB"
-                    filename_padding = f"{Fore.LIGHTBLACK_EX}{'-' * padding_length}{Fore.RESET}"
-
-                    formatted_file_info.append(f"{f_filename}{filename_padding} | {f_file_size}")
-
-                print(*formatted_file_info, sep="\n")
+                self.list_files(files)
         except Exception as e:
             self.__on_error(e)
 
@@ -263,8 +257,15 @@ class RiosCLI(cmd.Cmd):
         self.do_remove(filename)
 
     def do_zip(self, directory):
-        """Zips a directory."""
+        """Zips a directory. (Subcommands available)"""
         try:
+            if "--ls" in directory:
+                directory = directory.replace("--ls", "").strip()
+                zip_content = file_system.view_zip_content(directory)
+                self.list_directories(zip_content.get("directories"))
+                self.list_files(zip_content.get("files"))
+                return
+
             file_system.zip(directory)
             print(Fore.GREEN + f"Zipped: {directory}")
         except Exception as e:

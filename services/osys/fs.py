@@ -143,6 +143,33 @@ class FileSystem:
         except zipfile.BadZipFile as e:
             raise e
 
+    def view_zip_content(self, zipped_file: str) -> Dict[str, List[Tuple[str, float]]]:
+        """
+        Returns the content of the zipfile.
+        :param zipped_file: The zipfile of which the contents will be viewed of.
+        :return: The files and directories of the zipfile within a dictionary.
+        """
+        if not os.path.isfile(zipped_file):
+            raise FileNotFoundError(f"ZIP file '{zipped_file}' not found.")
+
+        try:
+            with zipfile.ZipFile(file=zipped_file, mode="r") as zip_ref:
+                directories = []
+                files = []
+                for info in zip_ref.infolist():
+                    file_size = info.file_size / (1024 * 1024)  # convert bytes to megabytes
+                    if info.is_dir():
+                        directories.append(info.filename)
+                    else:
+                        files.append((info.filename, file_size))
+
+                return {
+                    "directories": directories,
+                    "files": files
+                }
+        except Exception as e:
+            raise e
+
     def save_cache(self) -> None:
         """
         Saves the cache to a file.
