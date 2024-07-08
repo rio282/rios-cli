@@ -476,7 +476,7 @@ class RiosCLI(cmd.Cmd):
         # TODO: make search web and search local (to search on pc)
         print(f"Searching the web for: '{query.strip()}'...")
         results = web_searcher.search(query)
-        print(*results)
+        print(*results, sep="\n")
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""
