@@ -6,8 +6,6 @@ from typing import Final
 
 class NetworkService:
     def __init__(self):
-        self.fail = False
-
         self.default_gateway: Final[str] = "192.168.1.0"
         self.default_ip_range: Final[str] = f"{self.default_gateway}/24"
         self.ssid = self.get_current_ssid()

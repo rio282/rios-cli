@@ -1,6 +1,7 @@
 import os
 import pickle
-from typing import List, Tuple, Dict
+import zipfile
+from typing import List, Tuple, Dict, Optional
 
 
 class FileSystem:
@@ -25,7 +26,12 @@ class FileSystem:
         :param directory: The directory path to be cleaned and converted.
         :return: The absolute path of the given directory.
         """
-        directory = directory.replace("/", "\\").replace("--use-cache", "").strip()
+        directory = (directory
+                     .replace("/", "\\")
+                     .replace("--use-cache", "")
+                     .replace("--dirs", "")
+                     .replace("--files", "")
+                     .strip())
 
         # ensure that the drive letter is uppercase
         if len(directory) > 1 and directory[1] == ":":
@@ -99,6 +105,43 @@ class FileSystem:
         # save to cache before returning
         self.directory_cache[directory] = directories
         return directories
+
+    def zip(self, folder: str) -> Optional[bool]:
+        """
+        Zips a folder.
+        :param folder: the path to the folder that needs to be zipped
+        :return: if the operation succeeded
+        """
+        if not os.path.isdir(folder):
+            return False
+
+        try:
+            zip_file = f"{folder}.zip"
+            with zipfile.ZipFile(file=zip_file, mode="w", compression=zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(folder):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, start=folder)
+                        zipf.write(file_path, arcname)
+            return True
+        except Exception as e:
+            raise e
+
+    def unzip(self, zipped_file: str) -> Optional[bool]:
+        """
+        Unzips a zip folder.
+        :param zipped_file: the zip folder to unzip
+        :return: if the operation succeeded
+        """
+        if not os.path.isfile(zipped_file):
+            return False
+
+        try:
+            with zipfile.ZipFile(file=zipped_file, mode="r") as zip_ref:
+                zip_ref.extractall(os.path.dirname(zipped_file))
+            return True
+        except zipfile.BadZipFile as e:
+            raise e
 
     def save_cache(self) -> None:
         """

@@ -1,13 +1,12 @@
 import cmd
 import os
-
-import psutil
+import sys
 import win32gui, win32con
 
 from colorama import init, Fore
 from pprint import pprint
 
-from services import youtube, file_system, network, com
+from services import youtube, file_system, network, com, processes
 import shutil
 from typing import Final
 from playsound import playsound
@@ -27,7 +26,7 @@ intro_logo: Final[str] = Fore.GREEN + r"""
 
 
 class RiosCLI(cmd.Cmd):
-    prompt: Final[str] = Fore.WHITE + "~$ "
+    prompt: str = Fore.WHITE + "~$ "
     intro: Final[str] = f"{intro_logo}\nHello master, what can I do for you?"
 
     def __init__(self):
@@ -41,7 +40,7 @@ class RiosCLI(cmd.Cmd):
         self.clear_command: Final[str] = "cls" if self.__is_windows else "clear"
 
         # paths
-        self.original_cwd: Final[str] = os.getcwd()
+        self.original_wd: Final[str] = os.getcwd()
         os.chdir(os.path.expanduser("~/Desktop"))
         self.current_directory: str = os.getcwd()
 
@@ -51,6 +50,14 @@ class RiosCLI(cmd.Cmd):
             self.__set_fullscreen()
 
         os.system(f"title Rio's CLI -- {date.today()}")
+
+    def __change_prompt_prefix_to(self, prefix: str = ""):
+        is_path = "C:\\" in prefix
+        is_in_user_directory = os.path.expanduser("~") in prefix
+        if is_path and is_in_user_directory:
+            prefix = prefix.replace(os.path.expanduser("~"), "~")
+
+        self.prompt = f"{Fore.WHITE}{prefix} ~$ "
 
     def __on_error(self, error_exception: Exception):
         print(f"{Fore.RED}[!] An error has occurred: {error_exception}")
@@ -96,22 +103,37 @@ class RiosCLI(cmd.Cmd):
         if directory == ".":
             print(f"Changed directory to {self.current_directory}")
             return
-
-        if directory == "..":
-            self.current_directory = os.path.dirname(self.current_directory)
-            print(f"Changed directory to {self.current_directory}")
-            return
+        elif directory == "..":
+            directory = os.path.dirname(self.current_directory)
 
         new_dir = file_system.clean_directory(directory)
         if os.path.exists(new_dir) and os.path.isdir(new_dir):
             self.current_directory = new_dir
             os.chdir(self.current_directory)
             print(f"Changed directory to {self.current_directory}")
+            self.__change_prompt_prefix_to(new_dir)
         else:
             print(f"Directory '{directory}' does not exist.")
 
+    def complete_cd(self, text, line, begidx, endidx):
+        if not text:
+            return [d for d in os.listdir(self.current_directory) if
+                    os.path.isdir(os.path.join(self.current_directory, d))]
+
+        text_lower = text.lower()
+        return [d for d in os.listdir(self.current_directory) if
+                d.lower().startswith(text_lower) and os.path.isdir(os.path.join(self.current_directory, d))]
+
     def do_ls(self, directory):
         """Lists the files and directories in a directory."""
+
+        def truncate_filename(fn: str, fe: str, max_length: int = 32) -> str:
+            combined_length = len(fn) + len(fe)
+            if combined_length >= max_length:
+                truncate_length = max_length - len(fe) - 3  # 3 characters for >>>
+                fn = fn[:truncate_length] + ">>>"
+            return f"{fn}{Fore.LIGHTBLACK_EX}{fe}{Fore.RESET}"
+
         try:
             if directory == "--inspect-cache":
                 file_cache = file_system.file_cache
@@ -124,34 +146,48 @@ class RiosCLI(cmd.Cmd):
                 pprint(file_cache if file_cache else "Empty.")
                 return
 
+            print_dirs = False
+            print_files = False
+
+            if "--dirs" in directory:
+                print_dirs = True
+            if "--files" in directory:
+                print_files = True
+
+            if not print_dirs and not print_files:
+                print_dirs = True
+                print_files = True
+
             use_cache = "--use-cache" in directory
-            files = file_system.get_files_in_directory(directory, use_cache)
-            directories = file_system.get_directories_in_directory(directory, use_cache)
 
-            # print out dirs
-            print(f"{Fore.GREEN}Directories:")
-            print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory
-                    for directory in directories], sep="\n")
-
-            print()
+            if print_dirs:
+                # print out dirs
+                directories = file_system.get_directories_in_directory(directory, use_cache)
+                print(f"{Fore.GREEN}Directories:")
+                print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
+                        directories], sep="\n")
+                print()
 
             # print out files
-            print(f"{Fore.GREEN}Files:")
-            formatted_file_info = []
-            for file in files:
-                file, file_size = file
-                filename, file_ext = os.path.splitext(file)
+            if print_files:
+                files = file_system.get_files_in_directory(directory, use_cache)
+                print(f"{Fore.GREEN}Files:")
+                formatted_file_info = []
+                max_length = 32
+                for file in files:
+                    file, file_size = file
+                    filename, file_ext = os.path.splitext(file)
 
-                # format filename
-                f_filename = f"{filename}{Fore.LIGHTBLACK_EX}{file_ext}"
+                    padding_length = max_length - len(filename) - len(file_ext)
+                    file_size_mb_rounded = float(f"{file_size:.2f}")
 
-                # format file size
-                file_size_mb_rounded = float(f"{file_size:.2f}")
-                f_file_size = f"{Fore.CYAN}{file_size_mb_rounded}MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded}MB"
+                    f_filename = truncate_filename(filename, file_ext, max_length)
+                    f_file_size = f"{Fore.CYAN}{file_size_mb_rounded} MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded} MB"
+                    filename_padding = f"{Fore.LIGHTBLACK_EX}{'-' * padding_length}{Fore.RESET}"
 
-                formatted_file_info.append(f"{f_filename} {f_file_size}")
+                    formatted_file_info.append(f"{f_filename}{filename_padding} | {f_file_size}")
 
-            print(*formatted_file_info, sep="\n")
+                print(*formatted_file_info, sep="\n")
         except Exception as e:
             self.__on_error(e)
 
@@ -188,7 +224,7 @@ class RiosCLI(cmd.Cmd):
         os.mkdir(directory_path)
         print(f"Created directory at: {directory_path}")
 
-    def do_check(self, filename):
+    def do_inspect(self, filename):
         """Read the contents of a text file in the current directory."""
         file_path = os.path.join(self.current_directory, filename)
         try:
@@ -198,6 +234,10 @@ class RiosCLI(cmd.Cmd):
             raise FileNotFoundError(f"File '{filename}' not found.")
         except Exception as e:
             self.__on_error(e)
+
+    def do_read(self, filename):
+        """Alias for inspect."""
+        self.do_inspect(filename)
 
     def do_remove(self, filename):
         """Removes a file or directory."""
@@ -220,10 +260,26 @@ class RiosCLI(cmd.Cmd):
         """Alias for remove."""
         self.do_remove(filename)
 
+    def do_zip(self, directory):
+        """Zips a directory."""
+        try:
+            file_system.zip(directory)
+            print(Fore.GREEN + f"Zipped: {directory}")
+        except Exception as e:
+            self.__on_error(e)
+
+    def do_unzip(self, zip_file):
+        """Unzips a directory."""
+        try:
+            file_system.unzip(zip_file)
+            print(Fore.GREEN + f"Unzipped: {zip_file}")
+        except Exception as e:
+            self.__on_error(e)
+
     def do_fart(self, line):
         """Plays fart sound."""
         print("Thppt! *Shits pants*")
-        fart_sound_wav = os.path.join(self.original_cwd, "res", "fart.wav")
+        fart_sound_wav = os.path.join(self.original_wd, "res", "fart.wav")
         playsound(fart_sound_wav)
 
     def do_youtube(self, line):
@@ -238,7 +294,7 @@ class RiosCLI(cmd.Cmd):
         elif len(line) == 2 and line.pop() == "audio":
             audio_only = True
 
-        success = youtube.youtube_downloader.download(video_url, audio_only)
+        success = youtube.downloader.download(video_url, audio_only)
         print()
         if success:
             print(Fore.GREEN + "Download completed!")
@@ -297,34 +353,30 @@ class RiosCLI(cmd.Cmd):
     def do_processes(self, subcommands):
         """Allows you to interact with certain processes."""
         subcommands = subcommands.split()
-        if not subcommands or subcommands[0] == "list":
-            running_processes = [process for process in psutil.process_iter() if process.is_running()]
-            running_processes.sort(key=lambda process: process.name())
+        if not subcommands:
+            processes.list_processes()
+            return
 
-            for process in running_processes:
-                print(f"{Fore.LIGHTBLACK_EX}{process.pid:<5} {Fore.RESET}{process.name()}")
+        command = subcommands[0].lower()
+        command_args = subcommands[1:]
+        command_methods = {
+            "list": processes.list_processes,
+            "kill": processes.kill_process
+        }
 
-        elif subcommands[0] == "kill":
-            if len(subcommands) != 2:
-                print(Fore.RED + "Invalid use of command.")
-                return
+        if command in command_methods:
+            command_methods[command](command_args)
+            return
 
-            proc = subcommands[1]
-            killed = False
-            for process in psutil.process_iter():
-                if process.name().lower() == proc.lower():
-                    process.kill()
-                    print(f"{Fore.GREEN}Killed {process.name()} ({process.pid})")
-                    killed = True
-
-            if not killed:
-                print(f"{Fore.RED}Couldn't find process '{proc}'.")
-        else:
-            self.default(subcommands)
+        self.default(subcommands)
 
     def do_procs(self, line):
         """Alias for processes."""
         self.do_processes(line)
+
+    def do_ustats(self):
+        """Usage statistics."""
+        pass
 
     def do_network(self, subcommands):
         """Extensive information about the network when used correctly."""
@@ -345,10 +397,11 @@ class RiosCLI(cmd.Cmd):
         self.do_network(line)
 
     def do_com(self, subcommand):
+        """Allows interaction with COM port(s)."""
         if subcommand == "scan":
-            connections = com.connected
+            connections = com.connections
             print(f"{Fore.GREEN}Connections:")
-            print(*connections)
+            print(*connections if connections else "None")
         else:
             self.default(subcommand)
 
@@ -385,3 +438,9 @@ class RiosCLI(cmd.Cmd):
     def do_q(self, line):
         """Alias for quit."""
         return self.do_exit(line)
+
+    def do_reload(self, line):
+        """Reloads/Restarts the CLI."""
+        print("Reloading...")
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
