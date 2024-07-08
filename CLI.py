@@ -9,7 +9,7 @@ from pprint import pprint
 from psutil._common import bytes2human
 
 from etc.utils import truncate_filename, AutoCompletion
-from services import youtube, file_system, network, com, processes, statistics
+from services import youtube, file_system, network, com, processes, statistics, web_searcher
 import shutil
 from typing import Final
 from playsound import playsound
@@ -470,6 +470,13 @@ class RiosCLI(cmd.Cmd):
     def do_yt(self, line):
         """Alias for YouTube."""
         self.do_youtube(line)
+
+    def do_search(self, query):
+        """Searches a specified place for something to match the given query."""
+        # TODO: make search web and search local (to search on pc)
+        print(f"Searching the web for: '{query.strip()}'...")
+        results = web_searcher.search(query)
+        print(*results)
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""
