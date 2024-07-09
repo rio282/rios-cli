@@ -1,19 +1,23 @@
 import cmd
 import os
 import sys
+import shutil
+import webbrowser
+
 import win32gui, win32con
+from psutil._common import bytes2human
 
 from colorama import init, Fore
 from pprint import pprint
 
-from psutil._common import bytes2human
-
 from etc.utils import truncate_filename, AutoCompletion
+from etc.menu import InteractiveMenu
 from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
-import shutil
 from typing import Final
 from playsound import playsound
 from datetime import date, datetime
+
+from services.search.web import WebSearchResult
 
 intro_logo: Final[str] = Fore.GREEN + r"""
   o__ __o          o                   o/                      o__ __o     o           __o__ 
@@ -315,24 +319,19 @@ class RiosCLI(cmd.Cmd):
         fart_sound_wav = os.path.join(self.original_wd, "res", "fart.wav")
         playsound(fart_sound_wav)
 
-    def do_youtube(self, line):
+    def do_youtube(self, video_url):
         """Parses YouTube command(s)."""
-        line = line.split()
-        video_url = line[0]
-        audio_only = False
-
-        if len(line) > 2:
-            print("Invalid use of command.")
+        result = InteractiveMenu.spawn(["Video + Audio", "Audio only", "Exit"]).lower()
+        if result == "exit":
             return
-        elif len(line) == 2 and line.pop() == "audio":
-            audio_only = True
 
+        audio_only = result == "audio only"
         success = youtube.downloader.download(video_url, audio_only)
-        print()
+
         if success:
-            print(Fore.GREEN + "Download completed!")
+            print(f"\n{Fore.GREEN}Download completed!")
         else:
-            print(Fore.RED + "Something went wrong.")
+            print(f"{Fore.GREEN}\nSomething went wrong.")
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
@@ -458,12 +457,20 @@ class RiosCLI(cmd.Cmd):
         """Alias for network."""
         self.do_network(line)
 
-    def do_com(self, subcommand):
+    def do_com(self, line):
         """Allows interaction with COM port(s)."""
+        subcommand = InteractiveMenu.spawn(["Scan", "Exit"]).lower()
+
+        if subcommand == "exit":
+            return
+
         if subcommand == "scan":
             connections = com.connections
             print(f"{Fore.GREEN}Connections:")
-            print(*connections if connections else "None")
+            if connections:
+                print(*connections)
+            else:
+                print("No connections to COM port(s).")
         else:
             self.default(subcommand)
 
@@ -474,27 +481,27 @@ class RiosCLI(cmd.Cmd):
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
         query = query.strip()
+        search_type = InteractiveMenu.spawn(["Web", "Locally", "Exit"]).lower()
 
-        if "--local" in query:
-            query = query.replace("--local", "").strip()
-            print(f"Searching locally for: '{query}'...")
-            print()
-
-            print("Local search results:")
+        if search_type == "locally":
+            print(f"{Fore.LIGHTBLACK_EX}Searching locally for: '{query}'...")
             results = local_searcher.search(query)
-            for result in results:
-                print(f"\t{result.ranking}. {result}")
-        elif "--web" in query:
-            query = query.replace("--web", "").strip()
-            print(f"Searching the web for: '{query}'...")
-            print()
-
-            print("Web search results:")
+        elif search_type == "web":
+            print(f"{Fore.LIGHTBLACK_EX}Searching the web for: '{query}'...")
             results = web_searcher.search(query)
-            for result in results:
-                print(f"\t{result.ranking}. {result}")
+        elif search_type == "exit":
+            return
         else:
             self.default(query)
+            return
+
+        results.append(WebSearchResult("== Exit ==", ""))
+        result = InteractiveMenu.spawn([r.title for r in results])
+        selected_result = next((r for r in results if r.title == result), None)
+        if selected_result.title == "== Exit ==":
+            return
+
+        webbrowser.open(selected_result.href, new=0, autoraise=True)
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""

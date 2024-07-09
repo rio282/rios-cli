@@ -7,6 +7,7 @@ from moviepy.editor import AudioFileClip
 
 from etc.loading_screen import Loader
 from etc import escape_windows_safe_filename
+from etc.menu import InteractiveMenu
 
 
 class Downloader:
@@ -58,8 +59,8 @@ class Downloader:
 
     def prompt_audio_file_conversion(self, file_path: str, old_file_format: str = "webm",
                                      new_file_format: str = "mp3") -> None:
-        print("Do you wish to convert to mp3?")
-        wants_mp3_conversion = input("Y/N?: ").strip().lower() in ["y", "yes"]
+        result = InteractiveMenu.spawn(["Yes", "No"], "Do you wish to convert to mp3?")
+        wants_mp3_conversion = result.lower() == "yes"
         if wants_mp3_conversion:
             new_file_path = file_path.replace(old_file_format, new_file_format)
             audio_clip = AudioFileClip(file_path)
