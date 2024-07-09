@@ -36,7 +36,7 @@ class ProcessManager:
 
     def list_processes(self) -> None:
         for process in self.get_processes():
-            print(f"{Fore.LIGHTBLACK_EX}{process[0]:<5} {Fore.RESET}{process[1]}")
+            print(f"{Fore.LIGHTBLACK_EX}{str(process[0]).ljust(5)} {Fore.RESET}{process[1]}")
 
     def kill_process(self, pid: int) -> bool:
         """Kills a process by its PID."""

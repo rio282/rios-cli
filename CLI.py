@@ -398,7 +398,7 @@ class RiosCLI(cmd.Cmd):
         }
 
         if command in command_methods:
-            command_methods[command](command_args)
+            command_methods[command](*command_args)
             return
 
         self.default(subcommands)
