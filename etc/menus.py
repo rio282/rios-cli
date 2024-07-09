@@ -54,32 +54,29 @@ class SliderMenu:
             stdscr.keypad(True)  # enable keypad mode
             curses.start_color()  # enable color
             curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
+            curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
             current_value = initial_value
             while True:
                 stdscr.clear()
+                stdscr.addstr(0, 0, title, curses.color_pair(2))
 
-                # Print title
-                stdscr.addstr(0, 0, title, curses.color_pair(1))
+                max_width = stdscr.getmaxyx()[1] - 12
+                slider_position = int((current_value - min_value) / (max_value - min_value) * max_width)
 
-                # Calculate position of slider
-                slider_position = int(
-                    (current_value - min_value) / (max_value - min_value) * (stdscr.getmaxyx()[1] - 12))
-
-                # Print slider bar
-                stdscr.addstr(2, 5, f"[{' ' * (stdscr.getmaxyx()[1] - 12)}]")
-                stdscr.addstr(2, 6 + slider_position, "*", curses.color_pair(1))
-
-                # Print current value
+                stdscr.addstr(2, 5, "[")
+                stdscr.addstr(2, 6, " " * slider_position, curses.color_pair(1))
+                stdscr.addstr(2, 6 + slider_position, " " * (max_width - slider_position))
+                stdscr.addstr(2, 6 + max_width, "]")
                 stdscr.addstr(4, 0, f"Value: {current_value}")
 
                 stdscr.refresh()
 
                 key = stdscr.getch()
                 if key == curses.KEY_LEFT and current_value > min_value:
-                    current_value -= increment_level
+                    current_value = max(current_value - increment_level, min_value)
                 elif key == curses.KEY_RIGHT and current_value < max_value:
-                    current_value += increment_level
+                    current_value = min(current_value + increment_level, max_value)
                 elif key == ord('\n'):
                     return current_value
 
