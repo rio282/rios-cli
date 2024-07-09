@@ -515,12 +515,13 @@ class RiosCLI(cmd.Cmd):
             return
 
         # create a copy of the results list and add "== Exit ==" to it
+        exit_text = ">>> Exit"
         results_with_exit = results.copy()
-        results_with_exit.append(WebSearchResult("== Exit ==", ""))
+        results_with_exit.append(WebSearchResult(exit_text, ""))
 
         result = InteractiveMenu.spawn([r.title for r in results_with_exit], f"Search results ({len(results)})")
         selected_result = next((r for r in results_with_exit if r.title == result), None)
-        if selected_result.title == "== Exit ==":
+        if selected_result.title == exit_text:
             return
 
         webbrowser.open(selected_result.href, new=0, autoraise=True)
