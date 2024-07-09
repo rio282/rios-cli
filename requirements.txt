@@ -7,6 +7,7 @@ playsound==1.2.2
 pytube==15.0.0
 moviepy==1.0.3
 python-vlc==3.0.20123
+pycaw>=20240210
 
 # system
 pywin32>=306

@@ -7,7 +7,7 @@ from moviepy.editor import AudioFileClip
 
 from etc.loading_screen import Loader
 from etc import escape_windows_safe_filename
-from etc.menu import InteractiveMenu
+from etc.menus import InteractiveMenu
 
 
 class Downloader:

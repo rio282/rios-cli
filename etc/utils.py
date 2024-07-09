@@ -1,5 +1,5 @@
 import os
-from typing import Final, List
+from typing import Final, List, Any
 
 
 def escape_windows_safe_filename(unsafe: str) -> str:
@@ -28,6 +28,17 @@ def truncate_filename(fn: str, fe: str, max_length: int = 32, character: str = "
         fn = fn[:truncate_length] + (character * 3)
 
     return f"{fn}{Fore.LIGHTBLACK_EX}{fe}{Fore.RESET}"
+
+
+def is_integer(supposed_string: Any):
+    """
+    Checks if the provided string is an integer.
+    :param supposed_string: string that's probably an integer
+    :return: If the provided object is an integer
+    """
+    if supposed_string[0] in ('-', '+'):
+        return supposed_string[1:].isdigit()
+    return supposed_string.isdigit()
 
 
 class AutoCompletion:

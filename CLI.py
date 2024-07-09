@@ -1,4 +1,5 @@
 import cmd
+import ctypes
 import os
 import sys
 import shutil
@@ -10,13 +11,17 @@ from psutil._common import bytes2human
 from colorama import init, Fore
 from pprint import pprint
 
-from etc.utils import truncate_filename, AutoCompletion
-from etc.menu import InteractiveMenu
+from pycaw.api.audioclient import ISimpleAudioVolume
+from pycaw.utils import AudioUtilities
+
+from etc.utils import truncate_filename, AutoCompletion, is_integer
+from etc.menus import InteractiveMenu, SliderMenu
 from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
 from typing import Final
 from playsound import playsound
 from datetime import date, datetime
 
+from services.osys import AudioService
 from services.search.web import WebSearchResult
 
 intro_logo: Final[str] = Fore.GREEN + r"""
@@ -380,7 +385,19 @@ class RiosCLI(cmd.Cmd):
 
     def do_volume(self, line):
         """Adjusts volume for windows."""
-        raise NotImplemented
+        if not line:
+            new_volume_level = SliderMenu.spawn("Volume", increment_level=2, initial_value=AudioService.get_volume())
+        else:
+            if not is_integer(line) or not 0 < int(line) < 100:
+                print(f"{Fore.RED}Value must be a number between 0-100.")
+                return
+            new_volume_level = line
+
+        try:
+            new_volume_level = int(new_volume_level)
+            AudioService.set_volume_to(new_volume_level)
+        except Exception as e:
+            self.__on_error(e)
 
     def do_processes(self, subcommands):
         """Allows you to interact with certain processes."""

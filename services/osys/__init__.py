@@ -3,6 +3,8 @@ from typing import List, Optional, Tuple
 import psutil
 import serial.tools.list_ports
 from colorama import Fore
+from pycaw.api.audioclient import ISimpleAudioVolume
+from pycaw.utils import AudioUtilities
 
 
 class COMService:
@@ -84,3 +86,26 @@ class StatisticsService:
             "memory_info": psutil.virtual_memory(),
             "disk_usage": psutil.disk_usage("/")
         }
+
+
+class AudioService:
+    @staticmethod
+    def set_volume_to(new_volume_level: int) -> None:
+        try:
+            sessions = AudioUtilities.GetAllSessions()
+            for session in sessions:
+                volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+                volume.SetMasterVolume(new_volume_level / 100, None)
+        except Exception as e:
+            raise Exception(f"Failed to set volume: {e}")
+
+    @staticmethod
+    def get_volume() -> Optional[int]:
+        try:
+            sessions = AudioUtilities.GetAllSessions()
+            for session in sessions:
+                volume = session._ctl.QueryInterface(ISimpleAudioVolume)
+                return int(volume.GetMasterVolume() * 100)
+        except Exception as e:
+            print(f"Failed to get volume level: {e}")
+            return None
