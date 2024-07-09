@@ -118,10 +118,12 @@ class RiosCLI(cmd.Cmd):
         return stop
 
     def preloop(self):
-        pass
+        file_system.load_cache()
+        web_searcher.load_cache()
 
     def postloop(self):
         file_system.save_cache()
+        web_searcher.save_cache()
 
     def emptyline(self):
         pass
@@ -336,7 +338,7 @@ class RiosCLI(cmd.Cmd):
         if success:
             print(f"\n{Fore.GREEN}Download completed!")
         else:
-            print(f"{Fore.GREEN}\nSomething went wrong.")
+            print(f"\n{Fore.GREEN}Something went wrong.")
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
@@ -512,9 +514,12 @@ class RiosCLI(cmd.Cmd):
             self.default(query)
             return
 
-        results.append(WebSearchResult("== Exit ==", ""))
-        result = InteractiveMenu.spawn([r.title for r in results], "Search results")
-        selected_result = next((r for r in results if r.title == result), None)
+        # create a copy of the results list and add "== Exit ==" to it
+        results_with_exit = results.copy()
+        results_with_exit.append(WebSearchResult("== Exit ==", ""))
+
+        result = InteractiveMenu.spawn([r.title for r in results_with_exit], f"Search results ({len(results)})")
+        selected_result = next((r for r in results_with_exit if r.title == result), None)
         if selected_result.title == "== Exit ==":
             return
 
@@ -552,6 +557,9 @@ class RiosCLI(cmd.Cmd):
 
     def do_reload(self, line):
         """Reloads/Restarts the CLI."""
+        print("Running postloop...")
+        self.postloop()
+
         print("Reloading...")
         python = sys.executable
         os.execl(python, python, *sys.argv)
