@@ -11,9 +11,6 @@ from psutil._common import bytes2human
 from colorama import init, Fore
 from pprint import pprint
 
-from pycaw.api.audioclient import ISimpleAudioVolume
-from pycaw.utils import AudioUtilities
-
 from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.menus import InteractiveMenu, SliderMenu
 from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
@@ -25,15 +22,19 @@ from services.osys import AudioService
 from services.search.web import WebSearchResult
 
 intro_logo: Final[str] = Fore.GREEN + r"""
-  o__ __o          o                   o/                      o__ __o     o           __o__ 
- <|     v\       _<|>_                /v                      /v     v\   <|>            |   
- / \     <\                          />                      />       <\  / \           / \  
- \o/     o/        o      o__ __o              __o__       o/             \o/           \o/  
-  |__  _<|        <|>    /v     v\            />  \       <|               |             |   
-  |       \       / \   />       <\           \o           \\             / \           < >  
- <o>       \o     \o/   \         /            v\            \         /  \o/            |   
-  |         v\     |     o       o              <\            o       o    |             o   
- / \         <\   / \    <\__ __/>         _\o__</            <\__ __/>   / \ _\o__/_  __|>_ 
+                                                      ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
+                                                      ⠀⠀       ⠀⠀ ⢀⣾⣿⠋⠀
+                                                      ⠀⠀⠀       ⠀⣠⣾⣿⡟⠀⠀
+ooooooooo.             .oooooo.   ooooo        ooooo ⠀         ⠀⢸⠛⠉⢹⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡠⠄⠠⣀⠀⠀⠀⠀⠀⠀⠀
+`888   `Y88.          d8P'  `Y8b  `888'        `888' ⠀⠀         ⡘⠀⠀⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠖⠉⠀⠀⠀⣾⣿⣦⡀⠀⠀⠀⠀⠀⠀⠀
+ 888   .d88'         888           888          888 ⠀          ⠀⡇⠀⠀⠀⢡⠄⠀⠀⣀⣀⣀⣠⠊⠀⠀⠀⠀⡠⠞⠛⠛⠛⠛⠀⠀⠀
+ 888ooo88P'          888           888          888   ⠀        ⠀⢃⠀⠀⠀⠀⠗⠚⠉⠉⠀⠈⠁⠀⠀⠀⢀⡔⠁⠀
+ 888`88b.    8888888 888           888          888          ⠀ ⠀⠸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣶⣄⠲⡎⠀⠀
+ 888  `88b.          `88b    ooo   888       o  888   ⠀      ⠀  ⠀⠃⠀⠀⢠⣤⡀⠀⠀⠀⠀⣿⣿⣿⠀⠘⡄
+o888o  o888o          `Y8bood8P'  o888ooooood8 o888o⠀⠀          ⠀⡆⠀⠀⣿⣿⡇⠀⠀⠀⠀⠈⠛⠉⣴⣆⢹⡄⠀⠀
+                                                      ⠀        ⠀⠀⣇⢰⡧⣉⡉⠀⠀⢀⡀⠀⣀⣀⣠⣿⡷⢠⡇⠀⠀⠀
+                                                                 ⢻⠘⠃⠈⠻⢦⠞⠋⠙⠺⠋⠉⠉⠉⢡⠟⠀⠀⠀⠀
+                                                                 ⠀⠳⢄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⠋⠀            
 """ + Fore.RESET
 
 
