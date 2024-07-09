@@ -4,10 +4,40 @@ import sys
 import pretty_errors
 from typing import Final
 
+import tkinter as tk
+from tkinter import scrolledtext
+
 from CLI import RiosCLI
 
-ENVIRONMENT: Final[str] = "dev"
 PRETTY_ERRORS: Final[bool] = True
+
+
+def show_error_popup(error):
+    def close_window():
+        window.destroy()
+
+    window = tk.Tk()
+    window.title("Error Information")
+
+    # Window size
+    window.geometry("500x300")
+
+    # Error message label
+    label = tk.Label(window, text="A fatal error occurred:", font=("Arial", 14))
+    label.pack(pady=10)
+
+    # Scrolled text box for error details
+    text_area = scrolledtext.ScrolledText(window, wrap=tk.WORD, width=60, height=10, font=("Arial", 12))
+    text_area.pack(pady=10, padx=10)
+    text_area.insert(tk.INSERT, str(error))
+    text_area.configure(state='disabled')
+
+    # Close button
+    close_button = tk.Button(window, text="Close", command=close_window, font=("Arial", 12))
+    close_button.pack(pady=10)
+
+    window.eval("tk::PlaceWindow . center")
+    window.mainloop()
 
 
 def is_correct_python_version() -> bool:
@@ -57,6 +87,9 @@ if __name__ == "__main__":
             f"Incorrect Python version. Min required: {min_required_python_version['major']}.{min_required_python_version['minor']}.0"
         )
 
-    # main & exit
-    main(len(sys.argv), sys.argv)
-    sys.exit(0)
+    try:
+        main(len(sys.argv), sys.argv)
+    except Exception as e:
+        show_error_popup(e)
+    finally:
+        sys.exit(0)
