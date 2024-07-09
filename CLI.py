@@ -481,7 +481,7 @@ class RiosCLI(cmd.Cmd):
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
         query = query.strip()
-        search_type = InteractiveMenu.spawn(["Web", "Locally", "Exit"]).lower()
+        search_type = InteractiveMenu.spawn(["Web", "Locally", "Exit"], "Where do you want to search?").lower()
 
         if search_type == "locally":
             print(f"{Fore.LIGHTBLACK_EX}Searching locally for: '{query}'...")
@@ -496,7 +496,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         results.append(WebSearchResult("== Exit ==", ""))
-        result = InteractiveMenu.spawn([r.title for r in results])
+        result = InteractiveMenu.spawn([r.title for r in results], "Search results")
         selected_result = next((r for r in results if r.title == result), None)
         if selected_result.title == "== Exit ==":
             return
