@@ -315,7 +315,7 @@ class RiosCLI(cmd.Cmd):
         playsound(fart_sound_wav)
 
     def do_youtube(self, video_url):
-        """Parses YouTube command(s)."""
+        """Parses YouTube command(s). (PyTube is currently broken)."""
         result = InteractiveMenu.spawn(["Video + Audio", "Audio only", "Exit"]).lower()
         if result == "exit":
             return

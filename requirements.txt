@@ -14,6 +14,7 @@ pywin32>=306
 psutil>=5.9.8
 pyserial>=3.5
 pyreadline3>=3.4.1
+windows-curses>=2.3.3
 
 # networking
 requests>=2.31.0
@@ -21,4 +22,3 @@ beautifulsoup4>=4.12.3
 
 # etc
 anipy-cli>=2.7.31
-windows-curses>=2.3.3
