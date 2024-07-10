@@ -100,6 +100,7 @@ class ScrollableTextPane:
             scroll_speeds = [1, 2, 4, 8]
             scroll_speed_index = 0
             show_line_numbers = False
+            input_mode = False
             curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
             def initialize_screen() -> None:
@@ -135,20 +136,20 @@ class ScrollableTextPane:
                 percentage_str = f"{scroll_speed_str} | {percentage_x}% / {percentage_y}%".rjust(20)
 
                 # bottom bar
-                stdscr.hline(max_y - 1, 0, ' ', max_x, curses.color_pair(1))
-                stdscr.addstr(max_y - 1, 0, " Press 'q' to quit.", curses.color_pair(1))
-                stdscr.addstr(max_y - 1, max_x - len(percentage_str) - 1, percentage_str, curses.color_pair(1))
-                if title:
-                    title_length = len(title)
-                    start_x = (max_x - title_length) // 2
-                    stdscr.addstr(max_y - 1, start_x, title, curses.color_pair(1))
+                if not input_mode:
+                    stdscr.hline(max_y - 1, 0, ' ', max_x, curses.color_pair(1))
+                    stdscr.addstr(max_y - 1, 0, " Press 'q' to quit.", curses.color_pair(1))
+                    stdscr.addstr(max_y - 1, max_x - len(percentage_str) - 1, percentage_str, curses.color_pair(1))
+                    if title:
+                        title_length = len(title)
+                        start_x = (max_x - title_length) // 2
+                        stdscr.addstr(max_y - 1, start_x, title, curses.color_pair(1))
 
                 stdscr.refresh()
 
             def run() -> None:
-                nonlocal current_line, current_col, scroll_speed_index, show_line_numbers
+                nonlocal current_line, current_col, scroll_speed_index, show_line_numbers, input_mode
 
-                input_mode = False
                 input_str = ""
                 line_prompt_text = "Go to line (press 'Enter' to confirm, 'Esc' to cancel): "
 
@@ -159,7 +160,7 @@ class ScrollableTextPane:
                         if key == curses.KEY_ENTER or key == 10:
                             try:
                                 target_line = int(input_str) - 1
-                                target_line = max(0, min(target_line, max_line_number - max_y))
+                                target_line = max(0, min(target_line, max_line_number - max_y + 1))
                                 current_line = target_line
                                 current_col = 0
                             except ValueError:
@@ -181,6 +182,7 @@ class ScrollableTextPane:
                         elif 32 <= key <= 126:
                             input_str += chr(key)
 
+                        draw_pane()
                         stdscr.addstr(max_y - 1, 0, line_prompt_text)
                         stdscr.addstr(max_y - 1, len(line_prompt_text), input_str)
                         stdscr.refresh()
@@ -204,6 +206,7 @@ class ScrollableTextPane:
                         elif key == ord(':'):
                             input_mode = True
                             stdscr.clear()
+                            draw_pane()
                             stdscr.addstr(max_y - 1, 0, line_prompt_text)
                             stdscr.refresh()
                         elif key == ord('q'):
