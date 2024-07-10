@@ -1,5 +1,4 @@
 import subprocess
-import platform
 
 from typing import Final
 
@@ -15,27 +14,11 @@ class NetworkService:
         Shows what SSID we're currently connected to
         :return: The SSID we're connected to OR "<UNKNOWN>".
         """
-        system = platform.system()
         try:
-            if system == "Windows":
-                output = subprocess.check_output(["netsh", "wlan", "show", "interfaces"]).decode("utf-8")
-                ssid_line = [line.strip() for line in output.split("\n") if "SSID" in line][0]
-                ssid = ssid_line.split(": ")[1]
-                return ssid
-            elif system == "Linux":
-                output = subprocess.check_output(["iwgetid"]).decode("utf-8")
-                ssid = output.split('"')[1]
-                return ssid
-            elif system == "Darwin":
-                output = subprocess.check_output([
-                    "/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport",
-                    "-I"
-                ]).decode("utf-8")
-                ssid_line = [line for line in output.split("\n") if "SSID:" in line][0]
-                ssid = ssid_line.split(": ")[1]
-                return ssid
-            else:
-                return "<UNKNOWN>"
+            output = subprocess.check_output(["netsh", "wlan", "show", "interfaces"]).decode("utf-8")
+            ssid_line = [line.strip() for line in output.split("\n") if "SSID" in line][0]
+            ssid = ssid_line.split(": ")[1]
+            return ssid
         except subprocess.CalledProcessError:
             return "<UNKNOWN>"
 

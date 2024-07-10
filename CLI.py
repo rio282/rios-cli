@@ -241,7 +241,7 @@ class RiosCLI(cmd.Cmd):
         os.mkdir(directory_path)
         print(f"Created directory at: {directory_path}")
 
-    def do_inspect(self, filename):
+    def do_read(self, filename):
         """Read the contents of a text file in the current directory."""
         file_path = os.path.join(self.current_directory, filename)
         try:
@@ -254,19 +254,11 @@ class RiosCLI(cmd.Cmd):
         except Exception as e:
             self.__on_error(e)
 
-    def complete_inspect(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
-                                                AutoCompletion.FILES)
-
-    def do_read(self, filename):
-        """Alias for inspect."""
-        self.do_inspect(filename)
-
     def complete_read(self, text, line, begidx, endidx):
         return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
                                                 AutoCompletion.FILES)
 
-    def do_remove(self, filename):
+    def do_rm(self, filename):
         """Removes a file or directory."""
         file_path = os.path.join(self.current_directory, filename)
         try:
@@ -282,13 +274,6 @@ class RiosCLI(cmd.Cmd):
             print(f"Removed: {file_path}")
         except PermissionError as e:
             self.__on_error(e)
-
-    def complete_remove(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
-
-    def do_rm(self, filename):
-        """Alias for remove."""
-        self.do_remove(filename)
 
     def complete_rm(self, text, line, begidx, endidx):
         return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
@@ -364,31 +349,6 @@ class RiosCLI(cmd.Cmd):
         """Opens videos folder."""
         self.do_open(os.path.expanduser("~/Videos"))
 
-    def do_play(self, filename):
-        """Plays video in OS-preferred program."""
-        file_path = os.path.join(self.current_directory, filename)
-        if os.path.isdir(file_path):
-            raise NotImplemented
-
-        video_extensions = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm"]
-        audio_extensions = ["mp3", "wav", "flac", "aac", "ogg", "wma", "m4a", "aiff", "ape"]
-
-        try:
-            file_extension = os.path.splitext(file_path)[1].removeprefix(".").lower()
-
-            # TODO
-            if file_extension in video_extensions:
-                self.do_open(file_path)
-            elif file_extension in audio_extensions:
-                self.do_open(file_path)
-
-            else:
-                print(Fore.RED + "Unrecognized video/audio format.")
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File '{filename}' not found.")
-        except Exception as e:
-            self.__on_error(e)
-
     def do_volume(self, line):
         """Adjusts volume for windows."""
         if not line:
@@ -405,7 +365,7 @@ class RiosCLI(cmd.Cmd):
         except Exception as e:
             self.__on_error(e)
 
-    def do_processes(self, subcommands):
+    def do_procs(self, subcommands):
         """Allows you to interact with certain processes."""
         subcommands = subcommands.split()
         if not subcommands:
@@ -424,10 +384,6 @@ class RiosCLI(cmd.Cmd):
             return
 
         self.default(subcommands)
-
-    def do_procs(self, line):
-        """Alias for processes."""
-        self.do_processes(line)
 
     def do_ustats(self, line):
         """Usage statistics."""
@@ -462,7 +418,7 @@ class RiosCLI(cmd.Cmd):
             f"{'Free:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_free.ljust(align_length)} {disk_free.ljust(align_length)}"
         )
 
-    def do_network(self, subcommands):
+    def do_net(self, subcommands):
         """Extensive information about the network when used correctly."""
         try:
             subcommands = subcommands.split()
@@ -475,10 +431,6 @@ class RiosCLI(cmd.Cmd):
                 print(Fore.RED + "Unknown subcommand specified.")
         except Exception as e:
             self.__on_error(e)
-
-    def do_net(self, line):
-        """Alias for network."""
-        self.do_network(line)
 
     def do_com(self, line):
         """Allows interaction with COM port(s)."""
@@ -496,10 +448,6 @@ class RiosCLI(cmd.Cmd):
                 print("No connections to COM port(s).")
         else:
             self.default(subcommand)
-
-    def do_yt(self, line):
-        """Alias for YouTube."""
-        self.do_youtube(line)
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
@@ -544,21 +492,9 @@ class RiosCLI(cmd.Cmd):
         os.system(self.clear_command)
         print(self.intro)
 
-    def do_cls(self, line):
-        """Alias for clear."""
-        self.do_clear(line)
-
-    def do_quit(self, line):
+    def do_q(self, line):
         """Exit CLI."""
         return True
-
-    def do_exit(self, line):
-        """Alias for exit."""
-        return self.do_quit(line)
-
-    def do_q(self, line):
-        """Alias for quit."""
-        return self.do_exit(line)
 
     def do_reload(self, line):
         """Reloads/Restarts the CLI."""
