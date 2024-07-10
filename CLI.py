@@ -14,7 +14,7 @@ from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
 from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
 from services.cursive import InteractiveMenu, SliderMenu, ScrollableTextPane
-from typing import Final
+from typing import Final, List, Tuple
 from playsound import playsound
 from datetime import date, datetime
 
@@ -87,7 +87,7 @@ class RiosCLI(cmd.Cmd):
     def __minimize_window(self):
         win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
 
-    def list_files(self, files):
+    def list_files(self, files: List[Tuple[str, float]]):
         print()
         print(f"{Fore.GREEN}Files:")
         formatted_file_info = []
@@ -107,7 +107,7 @@ class RiosCLI(cmd.Cmd):
 
         print(*formatted_file_info, sep="\n")
 
-    def list_directories(self, directories):
+    def list_directories(self, directories: List[str]):
         print()
         print(f"{Fore.GREEN}Directories:")
         print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
