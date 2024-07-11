@@ -43,7 +43,7 @@ class FileSystem:
             return os.path.realpath(os.path.join(os.path.expanduser("~"), directory.removeprefix("~\\")))
         return os.path.realpath(os.path.join(os.getcwd(), directory))
 
-    def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[Tuple[str, float]] or None:
+    def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[Tuple[str, float]]:
         """
         Gets the files within a directory along with their respective file size in Megabytes.
         If anything fails an error will be thrown with a corresponding error message.
@@ -75,7 +75,7 @@ class FileSystem:
         self.file_cache[directory] = files
         return files
 
-    def get_directories_in_directory(self, directory: str, use_cache: bool = False) -> List[str] or None:
+    def get_directories_in_directory(self, directory: str, use_cache: bool = False) -> List[str]:
         """
         Gets the directories within a directory.
         If anything fails an error will be thrown with a corresponding error message.

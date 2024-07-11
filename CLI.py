@@ -230,16 +230,18 @@ class RiosCLI(cmd.Cmd):
         except Exception as e:
             self.__on_error(e)
 
-    def do_mkdir(self, directory_name):
+    def do_mkdir(self, directory_name, silent: bool = False):
         """Create a new directory in the current directory."""
         directory_path = os.path.join(self.current_directory, directory_name)
         if os.path.exists(directory_path):
             directory_path = directory_path.removesuffix(directory_name)
-            print(f"Directory '{directory_name}' already exists in directory '{directory_path}'")
+            if not silent:
+                print(f"Directory '{directory_name}' already exists in directory '{directory_path}'")
             return
 
         os.mkdir(directory_path)
-        print(f"Created directory at: {directory_path}")
+        if not silent:
+            print(f"Created directory at: {directory_path}")
 
     def do_read(self, filename):
         """Read the contents of a text file in the current directory."""
@@ -327,6 +329,42 @@ class RiosCLI(cmd.Cmd):
             print(f"\n{Fore.GREEN}Download completed!")
         else:
             print(f"\n{Fore.GREEN}Something went wrong.")
+
+    def do_anime(self, line):
+        """Anime."""
+        result = InteractiveMenu.spawn(["Download Anime", "Watch Downloaded Animes", "Exit"]).lower()
+        if result == "exit":
+            return
+
+        # make preparations
+        animes_dir = os.path.join(os.path.expanduser("~/Videos"), "anime")
+        self.do_mkdir(animes_dir, silent=True)
+
+        # actual
+        if result == "download anime":
+            # TODO: open anipy-cli
+            pass
+        elif result == "watch downloaded animes":
+            # choose anime
+            animes = file_system.get_directories_in_directory(animes_dir)
+            animes.append("Exit")
+            anime = InteractiveMenu.spawn(animes, title="Choose an anime to watch:")
+            if anime.lower() == "exit":
+                return
+
+            # choose episode
+            anime_dir = os.path.join(animes_dir, anime)
+            episodes = file_system.get_files_in_directory(anime_dir)
+            episodes = [ep[0].removesuffix(".mp4") for ep in episodes if ep[0].endswith(".mp4")]
+
+            episodes.append("Exit")
+            episode = InteractiveMenu.spawn(episodes, title="Choose an episode:")
+            if episode.lower() == "exit":
+                return
+
+            # play episode
+            episode_file = os.path.join(anime_dir, f"{episode}.mp4")
+            self.do_open(episode_file)  # TODO: open it, pause it and make it fullscreen
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
