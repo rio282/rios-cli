@@ -1,4 +1,5 @@
 import os
+from enum import auto
 from typing import Final, List, Any
 
 
@@ -42,9 +43,9 @@ def is_integer(supposed_string: Any):
 
 
 class AutoCompletion:
-    BOTH: Final[str] = "BOTH"
-    DIRECTORIES: Final[str] = "DIRECTORIES"
-    FILES: Final[str] = "FILES"
+    BOTH: Final[int] = auto()
+    DIRECTORIES: Final[int] = auto()
+    FILES: Final[int] = auto()
 
     @staticmethod
     def autocomplete_path(current_directory: str, text: str, line: str, begidx: int, endidx: int,

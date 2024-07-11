@@ -21,4 +21,4 @@ requests>=2.31.0
 beautifulsoup4>=4.12.3
 
 # etc
-anipy-cli>=2.7.31
+anipy-api>=3.1.8
