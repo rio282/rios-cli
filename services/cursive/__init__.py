@@ -1,10 +1,10 @@
 import curses
-from typing import List, Optional
+from typing import List, Optional, Any
 
 
 class InteractiveMenu:
     @staticmethod
-    def spawn(with_options: List[str], title: Optional[str] = None) -> Optional[str]:
+    def spawn(with_options: List[str], title: Optional[str] = None) -> Optional[Any]:
         def menu(stdscr):
             stdscr.clear()
 

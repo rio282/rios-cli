@@ -12,7 +12,7 @@ from pprint import pprint
 
 from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
-from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
+from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
 from services.cursive import InteractiveMenu, SliderMenu, ScrollableTextPane, InputMenu
 from typing import Final, List, Tuple
 from playsound import playsound
@@ -342,18 +342,36 @@ class RiosCLI(cmd.Cmd):
 
         # actual
         if result == "download anime":
+            # lookup anime
             anime_name = InputMenu.spawn("Anime Name: ")
-            print(anime_name)
+            animes = anime.lookup.search_anime_by_name(anime_name)
+
+            # choose anime
+            chosen_anime = InteractiveMenu.spawn(animes, "Choose an anime:")
+
+            # choose episode
+            episodes = anime.lookup.get_episodes_by_anime(chosen_anime)
+            episode = InteractiveMenu.spawn(episodes, "Choose an episode:")
+
+            # download episode
+            try:
+                download_path = anime.downloader.download_episode(chosen_anime, int(episode))
+            except Exception as e:
+                self.__on_error(e)
+                return
+
+            print(f"{Fore.GREEN}Successfully download episode!")
+            self.do_open(download_path)
         elif result == "watch downloaded animes":
             # choose anime
             animes = file_system.get_directories_in_directory(animes_dir)
             animes.append("Exit")
-            anime = InteractiveMenu.spawn(animes, title="Choose an anime to watch:")
-            if anime.lower() == "exit":
+            anime_name = InteractiveMenu.spawn(animes, title="Choose an anime to watch:")
+            if anime_name.lower() == "exit":
                 return
 
             # choose episode
-            anime_dir = os.path.join(animes_dir, anime)
+            anime_dir = os.path.join(animes_dir, anime_name)
             episodes = file_system.get_files_in_directory(anime_dir)
             episodes = [ep[0].removesuffix(".mp4") for ep in episodes if ep[0].endswith(".mp4")]
 

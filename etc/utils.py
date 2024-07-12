@@ -43,13 +43,13 @@ def is_integer(supposed_string: Any):
 
 
 class AutoCompletion:
-    BOTH: Final[int] = auto()
-    DIRECTORIES: Final[int] = auto()
-    FILES: Final[int] = auto()
+    BOTH = auto()
+    DIRECTORIES = auto()
+    FILES = auto()
 
     @staticmethod
     def autocomplete_path(current_directory: str, text: str, line: str, begidx: int, endidx: int,
-                          completion_type: str = BOTH) -> List[str]:
+                          completion_type=BOTH) -> List[str]:
         if not text:
             completion = os.listdir(current_directory)
         else:
