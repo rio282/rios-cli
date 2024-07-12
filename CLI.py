@@ -376,7 +376,8 @@ class RiosCLI(cmd.Cmd):
             # choose episode
             anime_dir = os.path.join(animes_dir, anime_name)
             episodes = file_system.get_files_in_directory(anime_dir)
-            episodes = [ep[0].removesuffix(".mp4") for ep in episodes if ep[0].endswith(".mp4")]
+            episodes = [ep[0].removesuffix(".mp4").removesuffix(".ts") for ep in episodes if
+                        ep[0].endswith(".mp4") or ep[0].endswith(".ts")]
 
             episodes.append("Exit")
             episode = InteractiveMenu.spawn(episodes, title="Choose an episode:")

@@ -46,7 +46,7 @@ class Downloader:
                 ffmpeg=False
             )
 
-            return episode_file
+            return f"{episode_file}.ts"
         except:
             raise
 
