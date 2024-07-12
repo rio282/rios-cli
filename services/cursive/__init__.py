@@ -15,8 +15,9 @@ class InteractiveMenu:
             curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
             nonlocal with_options
-            max_y, _ = stdscr.getmaxyx()
-            with_options = with_options[:max_y - 1]  # prevent my boy from crashing
+            max_y, max_x = stdscr.getmaxyx()
+            view_height = max_y - 2  # view height excluding title and bottom padding
+            start_idx = 0
 
             current_row = 0
             while True:
@@ -25,21 +26,29 @@ class InteractiveMenu:
                 if title:
                     stdscr.addstr(0, 0, title, curses.color_pair(2))
 
+                # Calculate the end index for the viewable window
+                end_idx = min(start_idx + view_height, len(with_options))
+
                 # print menu options
-                for index, row in enumerate(with_options):
+                for index in range(start_idx, end_idx):
+                    row = str(with_options[index])
                     if index == current_row:
                         stdscr.attron(curses.color_pair(1))
-                        stdscr.addstr(index + 2, 0, f"[{index + 1}] {row}")
+                        stdscr.addstr(index - start_idx + 1, 0, f"[{index + 1}] {row[:max_x - 4]}")
                         stdscr.attroff(curses.color_pair(1))
                     else:
-                        stdscr.addstr(index + 2, 0, f"[{index + 1}] {row}")
+                        stdscr.addstr(index - start_idx + 1, 0, f"[{index + 1}] {row[:max_x - 4]}")
 
                 # update selection
                 key = stdscr.getch()
                 if key == curses.KEY_UP and current_row > 0:
                     current_row -= 1
+                    if current_row < start_idx:
+                        start_idx -= 1
                 elif key == curses.KEY_DOWN and current_row < len(with_options) - 1:
                     current_row += 1
+                    if current_row >= end_idx:
+                        start_idx += 1
                 elif key == ord('\n'):
                     return with_options[current_row]
 

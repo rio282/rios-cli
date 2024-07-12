@@ -45,6 +45,9 @@ class Downloader:
                 container=".mkv",
                 ffmpeg=False
             )
+        except OSError:
+            # Stupid remixer can't find specified file. So dumb...
+            pass
         except:
             raise
 
