@@ -24,7 +24,7 @@ class Downloader:
         self.verbose = False
 
     def download_episode(self, anime: Anime, episode_number: int, language: LanguageTypeEnum = LanguageTypeEnum.SUB,
-                         preferred_quality: str = Quality.QUALITY_720P, verbose: bool = False) -> str:
+                         preferred_quality: str = Quality.QUALITY_720P, verbose: bool = False) -> None:
         self.verbose = verbose
         try:
             # prepare stream
@@ -45,8 +45,6 @@ class Downloader:
                 container=".mkv",
                 ffmpeg=False
             )
-
-            return f"{episode_file}.ts"
         except:
             raise
 

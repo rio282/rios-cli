@@ -360,9 +360,8 @@ class RiosCLI(cmd.Cmd):
 
             # download episode
             try:
-                download_path = anime.downloader.download_episode(chosen_anime, int(episode), verbose=verbose)
-                print(f"{Fore.GREEN}Successfully download episode!")
-                self.do_open(download_path)
+                anime.downloader.download_episode(chosen_anime, int(episode), verbose=verbose)
+                print(f"{Fore.GREEN}Successfully download episode {episode} from '{chosen_anime}'!")
             except Exception as e:
                 self.__on_error(e)
         elif result == "watch downloaded animes":
@@ -376,8 +375,7 @@ class RiosCLI(cmd.Cmd):
             # choose episode
             anime_dir = os.path.join(animes_dir, anime_name)
             episodes = file_system.get_files_in_directory(anime_dir)
-            episodes = [ep[0].removesuffix(".mp4").removesuffix(".ts") for ep in episodes if
-                        ep[0].endswith(".mp4") or ep[0].endswith(".ts")]
+            episodes = [ep[0].removesuffix(".ts") for ep in episodes if ep[0].endswith(".ts")]
 
             episodes.append("Exit")
             episode = InteractiveMenu.spawn(episodes, title="Choose an episode:")
@@ -385,8 +383,8 @@ class RiosCLI(cmd.Cmd):
                 return
 
             # play episode
-            episode_file = os.path.join(anime_dir, f"{episode}.mp4")
-            self.do_open(episode_file)  # TODO: open it, pause it and make it fullscreen
+            episode_file = os.path.join(anime_dir, f"{episode}.ts")
+            self.do_open(episode_file)
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""

@@ -16,7 +16,7 @@ class InteractiveMenu:
 
             nonlocal with_options
             max_y, _ = stdscr.getmaxyx()
-            with_options = with_options[:max_y]  # prevent my boy from crashing
+            with_options = with_options[:max_y - 1]  # prevent my boy from crashing
 
             current_row = 0
             while True:
