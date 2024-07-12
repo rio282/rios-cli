@@ -5,6 +5,7 @@ from typing import Final
 from anipy_api.anime import Anime
 from anipy_api.download import Downloader as AniPyDownloader
 from anipy_api.provider import LanguageTypeEnum
+from colorama import Fore
 
 from etc import escape_windows_safe_filename
 from etc.loading_screen import Loader
@@ -20,30 +21,40 @@ class Downloader:
     def __init__(self):
         self.loader = Loader("Downloading...")
         self.animes_folder = os.path.join(os.path.expanduser("~/Videos"), "anime")
+        self.verbose = False
 
     def download_episode(self, anime: Anime, episode_number: int, language: LanguageTypeEnum = LanguageTypeEnum.SUB,
-                         preferred_quality: str = Quality.QUALITY_720P) -> Path:
+                         preferred_quality: str = Quality.QUALITY_720P, verbose: bool = False) -> str:
+        self.verbose = verbose
         try:
             # prepare stream
             stream = anime.get_video(episode_number, lang=language, preferred_quality=preferred_quality)
 
             # prepare download path
-            download_path = Path(self.animes_folder, escape_windows_safe_filename(anime.get_info().name))
-            download_path.mkdir(parents=True, exist_ok=True)
+            anime_dir = Path(os.path.join(self.animes_folder, escape_windows_safe_filename(anime.get_info().name)))
+            anime_dir.mkdir(parents=True, exist_ok=True)
+
+            episode_file = os.path.join(anime_dir, str(episode_number))
+            download_path = Path(episode_file)
 
             # download
             downloader = AniPyDownloader(self.__progress_callback, self.__info_callback)
-            return downloader.download(
+            downloader.download(
                 stream=stream,
                 download_path=download_path,
                 container=".mkv",
                 ffmpeg=False
             )
+
+            return episode_file
         except:
             raise
 
     def __info_callback(self, message: str):
-        pass
+        if self.verbose:
+            print(f"{Fore.LIGHTBLACK_EX}AniPy-API: {message}")
 
     def __progress_callback(self, percentage: float):
         self.loader.update_loader(percentage)
+        if percentage >= 100:
+            print()

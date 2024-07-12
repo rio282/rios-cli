@@ -336,6 +336,8 @@ class RiosCLI(cmd.Cmd):
         if result == "exit":
             return
 
+        verbose = "--verbose" in line
+
         # make preparations
         animes_dir = os.path.join(os.path.expanduser("~/Videos"), "anime")
         self.do_mkdir(animes_dir, silent=True)
@@ -344,6 +346,9 @@ class RiosCLI(cmd.Cmd):
         if result == "download anime":
             # lookup anime
             anime_name = InputMenu.spawn("Anime Name: ")
+            if not anime_name:
+                self.do_anime(line)
+                return
             animes = anime.lookup.search_anime_by_name(anime_name)
 
             # choose anime
@@ -355,13 +360,11 @@ class RiosCLI(cmd.Cmd):
 
             # download episode
             try:
-                download_path = anime.downloader.download_episode(chosen_anime, int(episode))
+                download_path = anime.downloader.download_episode(chosen_anime, int(episode), verbose=verbose)
+                print(f"{Fore.GREEN}Successfully download episode!")
+                self.do_open(download_path)
             except Exception as e:
                 self.__on_error(e)
-                return
-
-            print(f"{Fore.GREEN}Successfully download episode!")
-            self.do_open(download_path)
         elif result == "watch downloaded animes":
             # choose anime
             animes = file_system.get_directories_in_directory(animes_dir)
