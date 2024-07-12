@@ -13,7 +13,7 @@ from pprint import pprint
 from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
 from services import youtube, file_system, network, com, processes, statistics, web_searcher, local_searcher
-from services.cursive import InteractiveMenu, SliderMenu, ScrollableTextPane
+from services.cursive import InteractiveMenu, SliderMenu, ScrollableTextPane, InputMenu
 from typing import Final, List, Tuple
 from playsound import playsound
 from datetime import date, datetime
@@ -342,8 +342,8 @@ class RiosCLI(cmd.Cmd):
 
         # actual
         if result == "download anime":
-            # TODO: open anipy-cli
-            pass
+            anime_name = InputMenu.spawn("Anime Name: ")
+            print(anime_name)
         elif result == "watch downloaded animes":
             # choose anime
             animes = file_system.get_directories_in_directory(animes_dir)
