@@ -8,10 +8,12 @@ pytube==15.0.0
 moviepy==1.0.3
 python-vlc==3.0.20123
 pycaw>=20240210
+anipy-api>=3.1.8
+pygame>=2.6.0
 
 # system
 pywin32>=306
-psutil>=5.9.8
+psutil>=6.0.0
 pyserial>=3.5
 pyreadline3>=3.4.1
 windows-curses>=2.3.3
@@ -21,5 +23,4 @@ requests>=2.31.0
 beautifulsoup4>=4.12.3
 
 # etc
-anipy-api>=3.1.8
 watchdog>=4.0.1

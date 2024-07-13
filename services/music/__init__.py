@@ -2,6 +2,7 @@ import os
 from queue import PriorityQueue
 from typing import Optional
 
+import pygame
 from colorama import Fore
 
 from services import file_system
@@ -14,6 +15,8 @@ class MusicPlayer:
         self.now_playing: Optional[Song] = None
         self.current_playlist: Optional[Playlist] = None
         self.queue: PriorityQueue = PriorityQueue()
+        pygame.init()
+        pygame.mixer.init()
 
     @staticmethod
     def load_playlist_by_name(playlist_name: str) -> Optional[Playlist]:
@@ -44,7 +47,8 @@ class MusicPlayer:
     def play_song(self, _song: Song, from_playlist: Optional[Playlist] = None) -> None:
         self.now_playing = _song
         self.current_playlist = from_playlist
-        # TODO: actually play it lol
+        pygame.mixer.music.load(_song.location)
+        pygame.mixer.music.play()
 
     def add_song_to_queue(self, _song: Song) -> None:
         self.queue.put(_song)
@@ -60,6 +64,18 @@ class MusicPlayer:
                 self.queue.put(current_song)
 
         return found_song
+
+    def pause(self) -> None:
+        pygame.mixer.music.pause()
+
+    def resume(self) -> None:
+        pygame.mixer.music.unpause()
+
+    def stop(self) -> None:
+        pygame.mixer.music.stop()
+        self.now_playing = None
+        self.current_playlist = None
+        self.queue = PriorityQueue()
 
     def next(self) -> None:
         if not self.now_playing:
