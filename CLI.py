@@ -19,7 +19,7 @@ from typing import Final, List, Tuple
 from playsound import playsound
 from datetime import date, datetime
 
-from services.music import MusicPlayer
+from services.music import MusicPlayer, music_player
 from services.osys import AudioService
 from services.search.web import WebSearchResult
 
@@ -389,13 +389,16 @@ class RiosCLI(cmd.Cmd):
             episode_file = os.path.join(anime_dir, f"{episode}.ts")
             self.do_open(episode_file)
 
-    def do_music(self, line):
-        """Opens music player."""
-        print(music_pepe)
-        playlist_name = InputMenu.spawn("Playlist name: ")
-        songs = MusicPlayer.load_playlist_by_name(playlist_name)
-        print(songs)
+    def do_music(self, playlist_name):
+        """Opens music player. Currently only playlist support."""
         print("WIP!")
+        print(music_pepe)
+
+        if not playlist_name:
+            playlist_name = InputMenu.spawn("Playlist name: ")
+
+        playlist = MusicPlayer.load_playlist_by_name(playlist_name)
+        music_player.play_playlist(playlist)
 
     def do_config(self, line):
         """Opens config editor."""

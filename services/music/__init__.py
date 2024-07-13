@@ -79,3 +79,6 @@ class MusicPlayer:
                 self.play_song(next_song, from_playlist=self.current_playlist)
 
         # queue empty
+
+
+music_player = MusicPlayer()
