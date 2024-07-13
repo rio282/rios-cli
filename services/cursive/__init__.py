@@ -59,7 +59,7 @@ class InteractiveMenu:
             return None
 
         result = curses.wrapper(menu)
-        return result.replace("\n", "")
+        return result
 
 
 class SliderMenu:
