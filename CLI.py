@@ -392,6 +392,7 @@ class RiosCLI(cmd.Cmd):
         playlist_name = InputMenu.spawn("Playlist name: ")
         songs = MusicPlayer.load_playlist_by_name(playlist_name)
         print(songs)
+        print("WIP!")
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
