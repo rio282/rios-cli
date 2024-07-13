@@ -42,23 +42,22 @@ class RiosCLI(cmd.Cmd):
     prompt: str = Fore.WHITE + "~$ "
     intro: Final[str] = f"{intro_logo}\nHello master, what can I do for you?"
 
-    def __init__(self):
+    def __init__(self, use_full_screen: bool = True):
         super().__init__()
 
         # init stuff
         init(autoreset=True)
 
         # cli setup
-        self.__is_windows: Final[bool] = os.name == "nt"
-        self.clear_command: Final[str] = "cls" if self.__is_windows else "clear"
+        self.clear_command: Final[str] = "cls"
 
         # paths
         self.script_wd: Final[str] = os.path.dirname(os.path.abspath(__file__))
         os.chdir(os.path.expanduser("~/Desktop"))
         self.current_directory: str = os.getcwd()
 
-        # windows full screen
-        if self.__is_windows:
+        # full screen (slow)
+        if use_full_screen:
             self.hwnd = win32gui.GetForegroundWindow()
             self.__set_fullscreen()
 

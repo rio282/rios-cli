@@ -1,5 +1,7 @@
 import os
 import sys
+import argparse
+import threading
 
 import pretty_errors
 from typing import Final
@@ -8,11 +10,12 @@ import tkinter as tk
 from tkinter import scrolledtext
 
 from CLI import RiosCLI
+from services.__reloader import HotReloader
 
 PRETTY_ERRORS: Final[bool] = True
 
 
-def show_error_popup(error):
+def show_error_popup(error: Exception or str) -> None:
     def close_window():
         window.destroy()
 
@@ -48,13 +51,24 @@ def is_correct_python_version() -> bool:
     return correct_major_version and correct_minor_version
 
 
-def main(argc: int, argv: list[str]) -> None:
+def main(argc: int, argv: argparse.Namespace) -> None:
     try:
+        # loading text
         os.system("title Loading...")
         print("Loading...")
 
+        # setup
         cli = RiosCLI()
 
+        if argc > 0:
+            print("OPTIONS:")
+            if argv.enable_hot_reloading:
+                print("WITH: Hot reloading")
+                watcher_thread = threading.Thread(target=HotReloader.start, args=(cli,))
+                watcher_thread.daemon = True
+                watcher_thread.start()
+
+        # clear & start
         os.system(cli.clear_command)
         cli.cmdloop()
     except KeyboardInterrupt:
@@ -88,8 +102,13 @@ if __name__ == "__main__":
         )
 
     try:
-        main(len(sys.argv), sys.argv)
+        parser = argparse.ArgumentParser(description="R-CLI with optional hot reloading")
+        parser.add_argument("--enable-hot-reloading", action="store_true", help="Enable hot reloading")
+        args = parser.parse_args()
+        main(len(sys.argv), args)
     except Exception as e:
+        # fatal error
         show_error_popup(e)
     finally:
+        HotReloader.stop()
         sys.exit(0)
