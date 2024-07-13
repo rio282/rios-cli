@@ -407,6 +407,8 @@ class RiosCLI(cmd.Cmd):
             if not os.path.exists(config_file_path):
                 self.do_create(config_file_path, silent=True)
 
+        print("WIP!")
+
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
         current_datetime = datetime.now()
