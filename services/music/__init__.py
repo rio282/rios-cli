@@ -41,6 +41,7 @@ class MusicPlayer:
         return _playlist
 
     def play_playlist(self, _playlist: Playlist) -> None:
+        # TODO: wait for song to finish
         for _song in _playlist.songs:
             self.play_song(_song, from_playlist=_playlist)
 
