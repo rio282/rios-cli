@@ -18,6 +18,7 @@ from typing import Final, List, Tuple
 from playsound import playsound
 from datetime import date, datetime
 
+from services.music import MusicPlayer
 from services.osys import AudioService
 from services.search.web import WebSearchResult
 
@@ -385,6 +386,13 @@ class RiosCLI(cmd.Cmd):
             episode_file = os.path.join(anime_dir, f"{episode}.ts")
             self.do_open(episode_file)
 
+    def do_music(self, line):
+        """Opens music player."""
+        print(music_pepe)
+        playlist_name = InputMenu.spawn("Playlist name: ")
+        songs = MusicPlayer.load_playlist_by_name(playlist_name)
+        print(songs)
+
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
         current_datetime = datetime.now()
@@ -392,19 +400,6 @@ class RiosCLI(cmd.Cmd):
         formatted_time = current_datetime.strftime("%H:%M:%S")
         formatted_day = current_datetime.strftime("%A")
         print(f"Today is {formatted_day} {formatted_date} and it's currently {formatted_time}.")
-
-    def do_downloads(self, line):
-        """Opens downloads folder."""
-        self.do_open(os.path.expanduser("~/Downloads"))
-
-    def do_music(self, line):
-        """Opens music folder."""
-        print(music_pepe)
-        self.do_open(os.path.expanduser("~/Music"))
-
-    def do_videos(self, line):
-        """Opens videos folder."""
-        self.do_open(os.path.expanduser("~/Videos"))
 
     def do_volume(self, line):
         """Adjusts volume for windows."""

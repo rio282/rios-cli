@@ -34,7 +34,7 @@ class ChangeHandler(FileSystemEventHandler):
 
     def __trigger_reload(self, event):
         print()
-        print("Changes detected...")
+        print("Changes detected!")
         self.cli_instance.do_reload(event)
 
 
