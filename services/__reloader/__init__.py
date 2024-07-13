@@ -44,7 +44,7 @@ class HotReloader:
     def start(cli_instance: CLI.RiosCLI, root: str = os.getcwd(), ignored_dirs: Optional[List[str]] = None,
               debounce_interval: float = 3.0) -> None:
         if ignored_dirs is None:
-            ignored_dirs = ["venv", "__pycache__", ".git", ".idea", ".cache"]
+            ignored_dirs = ["venv", "__pycache__", ".git", ".idea", ".cache", ".config"]
 
         event_handler = ChangeHandler(cli_instance, ignored_dirs, debounce_interval)
         observer = Observer()
