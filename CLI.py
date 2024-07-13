@@ -218,15 +218,17 @@ class RiosCLI(cmd.Cmd):
     def complete_open(self, text, line, begidx, endidx):
         return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
 
-    def do_create(self, filename):
+    def do_create(self, filename, silent=False):
         """Create a new file in the current directory."""
         file_path = os.path.join(self.current_directory, filename)
         try:
             if os.path.exists(file_path):
-                print(f"Directory '{file_path}' already exists in directory '{file_path.removesuffix(filename)}'")
+                if not silent:
+                    print(f"Directory '{file_path}' already exists in directory '{file_path.removesuffix(filename)}'")
             else:
                 with open(file_path, "w"):
-                    print(f"File '{filename}' created in {self.current_directory}")
+                    if not silent:
+                        print(f"File '{filename}' created in {self.current_directory}")
         except Exception as e:
             self.__on_error(e)
 
@@ -393,6 +395,17 @@ class RiosCLI(cmd.Cmd):
         songs = MusicPlayer.load_playlist_by_name(playlist_name)
         print(songs)
         print("WIP!")
+
+    def do_config(self, line):
+        """Opens config editor."""
+        config_dir = os.path.join(self.script_wd, ".config")
+        self.do_mkdir(config_dir, silent=True)
+
+        config_files = ["cli", "music", "anime"]
+        for config_file in config_files:
+            config_file_path = os.path.join(config_dir, f"{config_file}.config")
+            if not os.path.exists(config_file_path):
+                self.do_create(config_file_path, silent=True)
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
