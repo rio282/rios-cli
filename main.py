@@ -8,6 +8,7 @@ from typing import Final
 
 import tkinter as tk
 from tkinter import scrolledtext
+import webbrowser
 
 from CLI import RiosCLI
 from services.__reloader import HotReloader
@@ -19,25 +20,42 @@ def show_error_popup(error: Exception or str) -> None:
     def close_window():
         window.destroy()
 
+    def reload():
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+
+    def search_on_google():
+        query = str(error).replace(" ", "+")
+        webbrowser.open(f"https://www.google.com/search?q={query}")
+
     window = tk.Tk()
     window.title("Error Information")
-
-    # Window size
     window.geometry("500x300")
 
-    # Error message label
+    # error details
     label = tk.Label(window, text="A fatal error occurred:", font=("Arial", 14))
     label.pack(pady=10)
 
-    # Scrolled text box for error details
     text_area = scrolledtext.ScrolledText(window, wrap=tk.WORD, width=60, height=10, font=("Arial", 12))
     text_area.pack(pady=10, padx=10)
     text_area.insert(tk.INSERT, str(error))
-    text_area.configure(state='disabled')
+    text_area.configure(state="disabled")
 
-    # Close button
-    close_button = tk.Button(window, text="Close", command=close_window, font=("Arial", 12))
-    close_button.pack(pady=10)
+    # button frame
+    button_frame = tk.Frame(window)
+    button_frame.pack(pady=10)
+
+    # close button
+    close_button = tk.Button(button_frame, text="Close", command=close_window, font=("Arial", 12))
+    close_button.grid(row=0, column=0, padx=5)
+
+    # reload button
+    reload_button = tk.Button(button_frame, text="Reload Application", command=reload, font=("Arial", 12))
+    reload_button.grid(row=0, column=1, padx=5)
+
+    # search on Google button
+    search_button = tk.Button(button_frame, text="Search on Google", command=search_on_google, font=("Arial", 12))
+    search_button.grid(row=0, column=2, padx=5)
 
     window.eval("tk::PlaceWindow . center")
     window.mainloop()
