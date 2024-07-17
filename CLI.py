@@ -13,6 +13,7 @@ from pprint import pprint
 from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
 from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
+from services.cardmarket import Tracker
 from services.cursive import InteractiveMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
 from typing import Final, List, Tuple
@@ -62,7 +63,7 @@ class RiosCLI(cmd.Cmd):
         # load config
         config_dir = os.path.join(self.script_wd, ".config")
         self.config = Config(config_dir)
-        if not os.path.exists(self.config.main_config):
+        if not os.path.exists(self.config.config_file):
             self.config.create_default_config()
 
         # full screen (slow)
@@ -412,7 +413,53 @@ class RiosCLI(cmd.Cmd):
 
     def do_config(self, line):
         """Opens config editor."""
-        pass
+        # select section
+        sections = [item[0] for item in self.config.config.items()]  # because config.sections() doesn't include DEFAULT
+        section = InteractiveMenu.spawn(sections, "Section")
+
+        # fix data because configparser is stupid
+        if section == "DEFAULT":
+            # because technically DEFAULT section doesn't exist (this is so dumb...)
+            # to avoid: 'dict_keys' object is not subscriptable
+            options = [key for key in self.config.config.defaults().keys()]
+        else:
+            options = self.config.config.options(section)
+
+            # remove default options because they're for some reason there
+            default_options = self.config.config.defaults().keys()
+            options = [opt for opt in options if opt not in default_options]
+
+        # select option
+        option = InteractiveMenu.spawn(options, "Option")
+
+        # change option value
+        old_value = self.config.config.get(section, option)
+        new_value = InputMenu.spawn(f"{option}=", title=f"Change option '{option}'? (Current: {old_value})").strip()
+
+        if new_value == "":
+            # nothing happens
+            return
+
+        # confirm change
+        confirmation = InteractiveMenu.spawn(
+            ["Confirm", "Cancel"],
+            title=f"{option}: {old_value} -> {new_value}?"
+        ).lower()
+
+        if confirmation == "cancel":
+            # again nothing happens
+            return
+
+        # save changes
+        self.config.config[section][option] = new_value
+        self.config.save_config()
+        self.config.reload()
+
+    def do_ptrackers(self, line):
+        """Price trackers for different sites."""
+        print("WIP!")
+        tracker = Tracker(self.config.config.get(section="CARDMARKET", option="listing_file"))
+        print(tracker.products)
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
@@ -507,12 +554,14 @@ class RiosCLI(cmd.Cmd):
 
     def do_com(self, line):
         """Allows interaction with COM port(s)."""
-        subcommand = InteractiveMenu.spawn(["Scan", "Exit"]).lower()
+        if line:
+            subcommand = line
+        else:
+            subcommand = InteractiveMenu.spawn(["Scan", "Exit"]).lower()
 
         if subcommand == "exit":
             return
-
-        if subcommand == "scan":
+        elif subcommand == "scan":
             connections = com.connections
             print(f"{Fore.GREEN}Connections:")
             if connections:
