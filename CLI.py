@@ -22,6 +22,7 @@ from datetime import date, datetime
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
 from services.search.web import WebSearchResult
+from services.internal.config import Config
 
 intro_logo: Final[str] = Fore.GREEN + r"""
                                                       ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
@@ -353,6 +354,9 @@ class RiosCLI(cmd.Cmd):
                 self.do_anime(line)
                 return
             animes = anime.lookup.search_anime_by_name(anime_name)
+            if not animes:
+                print(f"{Fore.RED}No animes found with name: '{anime_name}'")
+                return
 
             # choose anime
             chosen_anime = InteractiveMenu.spawn(animes, "Choose an anime:")
@@ -406,48 +410,9 @@ class RiosCLI(cmd.Cmd):
         config_dir = os.path.join(self.script_wd, ".config")
         self.do_mkdir(config_dir, silent=True)
 
-        # make sure config files exist
-        config_files = ["CLI", "Music", "Anime"]
-        for config_file in config_files:
-            config_file_path = os.path.join(config_dir, f"{config_file.lower()}.config")
-            if not os.path.exists(config_file_path):
-                self.do_create(config_file_path, silent=True)
-
-        # user chooses file
-        config_files.append("Exit")
-        chosen_config_file = InteractiveMenu.spawn(config_files, "Choose a config file to view/edit:")
-        if chosen_config_file.lower() == "exit":
-            return
-
-        # user chooses setting to change
-        chosen_config_file_path = os.path.join(config_dir, f"{chosen_config_file.lower()}.config")
-        with open(file=chosen_config_file_path, mode="r") as cf:
-            settings = cf.readlines()
-            settings.append("Exit")
-
-        chosen_setting = InteractiveMenu.spawn(settings, use_indexes=False)
-        if not chosen_setting or chosen_setting.lower() == "exit":
-            return
-
-        key, old_value = chosen_setting.split("=")
-        new_value = InputMenu.spawn(f"{key}=").strip()
-
-        # confirm change
-        confirmation = InteractiveMenu.spawn(["Confirm", "Cancel"], title=f"{key}: {old_value} -> {new_value}?").lower()
-        if confirmation == "cancel":
-            return
-
-        # update settings and save
-        updated_settings = []
-        for setting in settings:
-            setting_key, setting_value = setting.strip().split("=")
-            if setting_key == key:
-                updated_settings.append(f"{key}={new_value}\n")
-            else:
-                updated_settings.append(setting)
-
-        with open(file=chosen_config_file_path, mode="w") as cf:
-            cf.writelines(updated_settings)
+        config = Config()
+        print(config.config_file_location)
+        config.create_default_config()
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""

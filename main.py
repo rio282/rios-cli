@@ -11,7 +11,7 @@ from tkinter import scrolledtext
 import webbrowser
 
 from CLI import RiosCLI
-from services.__reloader import HotReloader
+from services.internal.reloader import HotReloader
 
 PRETTY_ERRORS: Final[bool] = True
 

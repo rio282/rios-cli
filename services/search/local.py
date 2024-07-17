@@ -1,7 +1,9 @@
 import os
+import fnmatch
 
 from typing import List
-import concurrent.futures
+from fuzzywuzzy import fuzz
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class LocalSearchResult:
@@ -15,35 +17,28 @@ class LocalSearchResult:
 
 
 class LocalSearcher:
-    def __init__(self):
-        super().__init__()
+    def __init__(self, search_threshold: int = 50):
+        self.search_threshold = search_threshold
 
-    def search(self, query: str) -> List[LocalSearchResult]:
+    def search(self, directories: List[str], fn_query: str, file_types: str = "") -> List[LocalSearchResult]:
         matches = []
-        ranking = 1
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [executor.submit(self.__search_directory, root, query) for root in self.__get_search_roots()]
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                for match in result:
-                    match.ranking = ranking
-                    ranking += 1
-                matches.extend(result)
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(self.__search_directory, directory, fn_query, file_types):
+                    directory for directory in directories
+            }
+            for future in as_completed(futures):
+                matches.extend(future.result())
 
         return matches
 
-    def __get_search_roots(self):
-        # Adjust the search roots as needed
-        return ["/"]
-
-    def __search_directory(self, directory, query):
+    def __search_directory(self, directory: str, query: str, file_types: str) -> List[LocalSearchResult]:
         matches = []
-        for root, dirs, files in os.walk(directory):
-            for name in files:
-                if query.lower() in name.lower():
-                    matches.append(LocalSearchResult(title=name, location=os.path.join(root, name)))
-            for name in dirs:
-                if query.lower() in name.lower():
-                    matches.append(LocalSearchResult(title=name, location=os.path.join(root, name)))
+        for root, _, filenames in os.walk(directory):
+            for filename in filenames:
+                if filename.endswith(tuple(ft for ft in file_types)) or file_types[0] == "":
+                    if fuzz.token_sort_ratio(query.lower(), filename.lower()) > self.search_threshold or query == "":
+                        match = LocalSearchResult(filename, os.path.join(root, filename))
+                        matches.append(match)
         return matches
