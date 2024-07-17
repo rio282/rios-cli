@@ -48,6 +48,9 @@ class Downloader:
         except OSError:
             # Stupid remixer can't find specified file. So dumb...
             pass
+        except AttributeError:
+            # Page is broken somehow
+            raise Exception(f"AniPy-API can't find stream for '{anime.name}'")
         except:
             raise
 
