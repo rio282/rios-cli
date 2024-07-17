@@ -59,6 +59,12 @@ class RiosCLI(cmd.Cmd):
         os.chdir(os.path.expanduser("~/Desktop"))
         self.current_directory: str = os.getcwd()
 
+        # load config
+        config_dir = os.path.join(self.script_wd, ".config")
+        self.config = Config(config_dir)
+        if not os.path.exists(self.config.main_config):
+            self.config.create_default_config()
+
         # full screen (slow)
         if use_full_screen:
             self.hwnd = win32gui.GetForegroundWindow()
@@ -406,13 +412,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_config(self, line):
         """Opens config editor."""
-        # make sure config file exists
-        config_dir = os.path.join(self.script_wd, ".config")
-        self.do_mkdir(config_dir, silent=True)
-
-        config = Config()
-        print(config.config_file_location)
-        config.create_default_config()
+        pass
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
@@ -529,6 +529,7 @@ class RiosCLI(cmd.Cmd):
 
         if search_type == "locally":
             print(f"{Fore.LIGHTBLACK_EX}Searching locally for: '{query}'...")
+            local_searcher.search_threshold = self.config.config.getint(section="DEFAULT", option="search_threshold")
             results = local_searcher.search(query)
         elif search_type == "web":
             print(f"{Fore.LIGHTBLACK_EX}Searching the web for: '{query}'...")
@@ -553,17 +554,15 @@ class RiosCLI(cmd.Cmd):
 
     def do_hide(self, line):
         """Hides (minimizes) console window."""
-        if self.__is_windows:
-            print(Fore.RESET + "Sshh!")
-            print(Fore.RESET + "(Cya soon!)")
-            self.__minimize_window()
-        else:
-            print(f"{Fore.RED}Windows support only.")
+        print(Fore.RESET + "Sshh!")
+        print(Fore.RESET + "(Cya soon!)")
+        self.__minimize_window()
 
     def do_clear(self, line):
         """Clears screen."""
         os.system(self.clear_command)
-        print(self.intro)
+        if self.config.config.getboolean(section="DEFAULT", option="display_intro"):
+            print(self.intro)
 
     def do_q(self, line):
         """Exit CLI."""
@@ -571,6 +570,12 @@ class RiosCLI(cmd.Cmd):
 
     def do_reload(self, line):
         """Reloads/Restarts the CLI."""
+        if line == "config":
+            print("Reloading config...")
+            self.config.reload()
+            print("Reloaded config!")
+            return
+
         print("Running postloop...")
         self.postloop()
 
