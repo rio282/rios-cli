@@ -13,7 +13,7 @@ from pprint import pprint
 from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
 from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
-from services.cardmarket import Tracker
+from services.price_charting import Tracker
 from services.cursive import InteractiveMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
 from typing import Final, List, Tuple
@@ -67,8 +67,8 @@ class RiosCLI(cmd.Cmd):
             self.config.create_default_config()
 
         # load tracker
-        self.tracker = Tracker(self.config.config.get(section="CARDMARKET", option="listing_file"),
-                               self.config.config.getint(section="CARDMARKET", option="refresh_time_minutes"))
+        self.tracker = Tracker(self.config.config.get(section="PRICE CHARTING", option="listing_file"),
+                               self.config.config.getint(section="PRICE CHARTING", option="refresh_time_minutes"))
         self.tracker.start()
 
         # full screen (slow)

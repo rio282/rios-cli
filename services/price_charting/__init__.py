@@ -1,33 +1,37 @@
-import datetime
 import os
+import re
 import csv
-from threading import Thread
-from time import sleep
 from typing import List, Optional, Dict, Any
 
 import requests
 from bs4 import BeautifulSoup
 
+import datetime
+from time import sleep
+from threading import Thread
+
+from etc.utils import collapse_spaces
+
 
 class Product:
-    def __init__(self, url: str, name: Optional[str] = None, last_known_price: Optional[int] = None):
+    def __init__(self, url: str, name: Optional[str] = None, prices: Optional[int] = None):
         self.url = url
         self.name = name
-        self.last_known_price = last_known_price
+        self.prices = prices
 
     @staticmethod
     def from_dict(_dict: Dict[str, Any]) -> "Product":
         url = _dict.get("url")
         name = _dict.get("name")
-        last_known_price = _dict.get("last_known_price")
-        if last_known_price is not None:
-            last_known_price = int(last_known_price)
+        prices = _dict.get("prices")
+        if prices is not None:
+            prices = int(prices)
 
-        return Product(url, name, last_known_price)
+        return Product(url, name, prices)
 
     def __repr__(self):
-        if self.last_known_price:
-            return f"{self.name}: {self.last_known_price}"
+        if self.prices:
+            return f"{self.name}: {self.prices}"
         return self.name if self.name else f"UNKNOWN <{self.url}>"
 
 
@@ -83,6 +87,33 @@ class Tracker:
 
 class Scraper:
     @staticmethod
+    def __extract_forex_rates(script_str: str):
+        pattern = re.compile(r"VGPC\.forex_rates\s*=\s*(\{.*?\});", re.DOTALL)
+        match = pattern.search(script_str)
+
+        if match:
+            forex_rates_str = match.group(1)
+            forex_rates = eval(forex_rates_str)
+            return forex_rates
+
+        return None
+
+    @staticmethod
+    def __parse_price_table(table_html):
+        soup = BeautifulSoup(table_html, "html.parser")
+        grade_price_dict = {}
+
+        rows = soup.find_all("tr")
+        for row in rows:
+            cols = row.find_all("td")
+            if len(cols) == 2:
+                grade = cols[0].text.strip()
+                price = float(cols[1].text.removeprefix("$").replace(",", "").strip())
+                grade_price_dict[grade] = price
+
+        return grade_price_dict
+
+    @staticmethod
     def scrape_products(products: List[Product]) -> List[Product]:
         updated_products = []
         for product in products:
@@ -103,10 +134,15 @@ class Scraper:
         page_source = response.text
         soup = BeautifulSoup(page_source, "html.parser")
 
-        card_title = soup.select_one(".page-title-container.d-flex.align-items-center.text-break")
-        product.name = card_title.text
+        script = soup.find("script", type="text/javascript").string
+        forex_rates = Scraper.__extract_forex_rates(script)
 
-        card_last_price = soup.select_one("dd.col-6:nth-child(12)")
-        product.last_known_price = float(card_last_price.text.replace(",", ".").split()[0])
+        card_title = soup.select_one("#product_name")
+        product.name = collapse_spaces(card_title.text.replace("\n", "")) if card_title else "N/A"
+
+        card_prices_table = soup.select_one("#full-prices table")
+        prices = Scraper.__parse_price_table(str(card_prices_table)) if card_prices_table else "N/A"
+
+        product.prices = prices
 
         return product
