@@ -367,6 +367,7 @@ class RiosCLI(cmd.Cmd):
 
             # download episode
             try:
+                print(f"{Fore.GREEN}{anime_name} - Episode: {episode}")
                 anime.downloader.download_episode(chosen_anime, int(episode), verbose=verbose)
                 print(f"{Fore.GREEN}Successfully download episode {episode} from '{chosen_anime}'!")
             except Exception as e:
