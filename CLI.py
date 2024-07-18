@@ -45,7 +45,7 @@ class RiosCLI(cmd.Cmd):
     prompt: str = Fore.WHITE + "~$ "
     intro: Final[str] = f"{intro_logo}\nHello master, what can I do for you?"
 
-    def __init__(self, use_full_screen: bool = True):
+    def __init__(self):
         super().__init__()
 
         # init stuff
