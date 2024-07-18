@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 
 import requests
 from bs4 import BeautifulSoup
+from colorama import Fore
 
 from etc.utils import collapse_spaces
 
@@ -72,6 +73,7 @@ class Tracker:
         with open(self.listing_file, mode="r", newline="") as listing_file:
             reader = csv.reader(listing_file)
             headers = next(reader, None)
+            headers = [header.strip() for header in headers]
 
         # save
         with open(file=self.listing_file, mode="w", newline="") as listing_file:
@@ -91,8 +93,12 @@ class Tracker:
 
                 self.products = Scraper.scrape_products(self.products)
                 self.__last_tracked = datetime.datetime.now()
+                # TODO: save __last_tracked to .config/ptrackers.lastupdated
 
-                self.save_products_to_listing_file()
+                saved = self.save_products_to_listing_file()
+                if not saved:
+                    raise Exception("Failed to save products.")
+
                 sleep(self.refresh_time_minutes * 60)
 
         self.__running = True
