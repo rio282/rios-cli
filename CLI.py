@@ -66,6 +66,11 @@ class RiosCLI(cmd.Cmd):
         if not os.path.exists(self.config.config_file):
             self.config.create_default_config()
 
+        # load tracker
+        self.tracker = Tracker(self.config.config.get(section="CARDMARKET", option="listing_file"),
+                               self.config.config.getint(section="CARDMARKET", option="refresh_time_minutes"))
+        self.tracker.start()
+
         # full screen (slow)
         if use_full_screen:
             self.hwnd = win32gui.GetForegroundWindow()
@@ -132,6 +137,7 @@ class RiosCLI(cmd.Cmd):
         web_searcher.load_cache()
 
     def postloop(self):
+        self.tracker.stop()
         file_system.save_cache()
         web_searcher.save_cache()
 
@@ -455,11 +461,27 @@ class RiosCLI(cmd.Cmd):
         self.config.save_config()
         self.config.reload()
 
-    def do_ptrackers(self, line):
+    def do_ptrackers(self, subcommand):
         """Price trackers for different sites."""
         print("WIP!")
-        tracker = Tracker(self.config.config.get(section="CARDMARKET", option="listing_file"))
-        print(tracker.products)
+
+        if not subcommand:
+            print(
+                f"{Fore.GREEN}Tracked (Items: {len(self.tracker.products)}, Last tracked: {self.tracker.last_tracked}):"
+            )
+            print(*self.tracker.products)
+        elif subcommand == "start":
+            if self.tracker.running:
+                print("Price tracker already running...")
+                return
+            self.tracker.start()
+        elif subcommand == "stop":
+            if not self.tracker.running:
+                print("Price tracker is not running.")
+                return
+            self.tracker.stop()
+        else:
+            self.default(subcommand)
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
@@ -467,7 +489,9 @@ class RiosCLI(cmd.Cmd):
         formatted_date = current_datetime.strftime("%Y-%m-%d")
         formatted_time = current_datetime.strftime("%H:%M:%S")
         formatted_day = current_datetime.strftime("%A")
-        print(f"Today is {formatted_day} {formatted_date} and it's currently {formatted_time}.")
+        print(
+            f"Today's date is {Fore.GREEN}{formatted_date}{Fore.RESET}, it's a {Fore.GREEN}{formatted_day}{Fore.RESET} and it's currently {Fore.GREEN}{formatted_time}{Fore.RESET}."
+        )
 
     def do_volume(self, line):
         """Adjusts volume for windows."""
