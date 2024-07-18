@@ -1,7 +1,9 @@
 import os
 import re
 from enum import auto
-from typing import Final, List, Any
+from typing import List, Any
+
+from fuzzywuzzy import process, fuzz
 
 
 def escape_windows_safe_filename(unsafe: str) -> str:
@@ -52,6 +54,18 @@ def collapse_spaces(input_str: str) -> str:
     return re.sub(r"\s+", " ", input_str).strip()
 
 
+class FuzzyMatcher:
+    @staticmethod
+    def top(input_str: str, potential_matches: List[str], top_size: int = 1) -> List[str]:
+        matches = process.extract(input_str, potential_matches, limit=top_size)
+        return [match[0] for match in matches]
+
+    @staticmethod
+    def any_matches(input_str: str, potential_matches: List[str]) -> List[str]:
+        matches = process.extract(input_str, potential_matches)
+        return [match[0] for match in matches if match[1] > 0]
+
+
 class AutoCompletion:
     BOTH = auto()
     DIRECTORIES = auto()
@@ -72,3 +86,13 @@ class AutoCompletion:
             return [d for d in completion if os.path.isfile(os.path.join(current_directory, d))]
 
         return completion
+
+    @staticmethod
+    def autocomplete_closer_match_of(possible_matches: List[str], text: str, line: str, begidx: int, endidx: int) -> \
+            List[str]:
+        if not text:
+            return possible_matches
+
+        text = text.lower()
+        best_match = max(possible_matches, key=lambda match: fuzz.ratio(text, match))
+        return [best_match]

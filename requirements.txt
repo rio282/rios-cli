@@ -25,3 +25,4 @@ beautifulsoup4>=4.12.3
 # etc
 watchdog>=4.0.1
 fuzzywuzzy>=0.18.0
+python-Levenshtein>=0.25.1

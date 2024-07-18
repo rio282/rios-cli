@@ -1,20 +1,19 @@
+import csv
+import datetime
 import os
 import re
-import csv
+from threading import Thread
+from time import sleep
 from typing import List, Optional, Dict, Any
 
 import requests
 from bs4 import BeautifulSoup
 
-import datetime
-from time import sleep
-from threading import Thread
-
 from etc.utils import collapse_spaces
 
 
 class Product:
-    def __init__(self, url: str, name: Optional[str] = None, prices: Optional[int] = None):
+    def __init__(self, url: str, name: Optional[str] = None, prices: Optional[Dict[str, float]] = None):
         self.url = url
         self.name = name
         self.prices = prices
@@ -24,10 +23,16 @@ class Product:
         url = _dict.get("url")
         name = _dict.get("name")
         prices = _dict.get("prices")
-        if prices is not None:
-            prices = int(prices)
 
         return Product(url, name, prices)
+
+    @staticmethod
+    def to_dict(_product: "Product") -> Dict[str, Any]:
+        return {
+            "url": _product.url,
+            "name": _product.name,
+            "prices": _product.prices
+        }
 
     def __repr__(self):
         if self.prices:
@@ -42,7 +47,7 @@ class Tracker:
         self.products = []
 
         self.__last_tracked = None
-        self.__stop_thread = False
+        self.__running = False
 
     def load_products_from_listing_file(self) -> List[Product]:
         if not os.path.exists(self.listing_file):
@@ -55,30 +60,51 @@ class Tracker:
 
         return products
 
+    def save_products_to_listing_file(self) -> bool:
+        if not os.path.exists(self.listing_file):
+            raise FileNotFoundError
+
+        # lol
+        if not self.products:
+            return False
+
+        # get headers
+        with open(self.listing_file, mode="r", newline="") as listing_file:
+            reader = csv.reader(listing_file)
+            headers = next(reader, None)
+
+        # save
+        with open(file=self.listing_file, mode="w", newline="") as listing_file:
+            writer = csv.writer(listing_file)
+            writer.writerow(headers)
+            for product in self.products:
+                product_data = Product.to_dict(product)
+                row = [product_data.get(header, "") for header in headers]
+                writer.writerow(row)
+
+        return True
+
     def start(self) -> None:
         def run():
-            while not self.__stop_thread:
-                print("Refreshing product list...")
-
+            while self.__running:
                 self.products = self.load_products_from_listing_file()
+
                 self.products = Scraper.scrape_products(self.products)
                 self.__last_tracked = datetime.datetime.now()
 
-                print(f"Products refreshed. Next refresh in {self.refresh_time_minutes} minutes.")
+                self.save_products_to_listing_file()
                 sleep(self.refresh_time_minutes * 60)
 
-        self.__stop_thread = False
+        self.__running = True
         thread = Thread(target=run, daemon=False)
         thread.start()
-        print("Price tracker started.")
 
     def stop(self) -> None:
-        self.__stop_thread = True
-        print("Price tracker stopped.")
+        self.__running = False
 
     @property
     def running(self) -> bool:
-        return not self.__stop_thread
+        return self.__running
 
     @property
     def last_tracked(self) -> datetime:
@@ -136,6 +162,7 @@ class Scraper:
 
         script = soup.find("script", type="text/javascript").string
         forex_rates = Scraper.__extract_forex_rates(script)
+        # TODO: do sumn with these rates
 
         card_title = soup.select_one("#product_name")
         product.name = collapse_spaces(card_title.text.replace("\n", "")) if card_title else "N/A"

@@ -5,6 +5,7 @@ import shutil
 import webbrowser
 
 import win32gui, win32con
+from fuzzywuzzy import fuzz
 from psutil._common import bytes2human
 
 from colorama import init, Fore
@@ -69,7 +70,6 @@ class RiosCLI(cmd.Cmd):
         # load tracker
         self.tracker = Tracker(self.config.config.get(section="PRICE CHARTING", option="listing_file"),
                                self.config.config.getint(section="PRICE CHARTING", option="refresh_time_minutes"))
-        self.tracker.start()
 
         # full screen (slow)
         if use_full_screen:
@@ -137,7 +137,7 @@ class RiosCLI(cmd.Cmd):
         web_searcher.load_cache()
 
     def postloop(self):
-        self.tracker.stop()
+        self.do_ptrackers("stop")
         file_system.save_cache()
         web_searcher.save_cache()
 
@@ -463,8 +463,6 @@ class RiosCLI(cmd.Cmd):
 
     def do_ptrackers(self, subcommand):
         """Price trackers for different sites."""
-        print("WIP!")
-
         if not subcommand:
             print(
                 f"{Fore.GREEN}Tracked (Items: {len(self.tracker.products)}, Last tracked: {self.tracker.last_tracked}):"
@@ -472,16 +470,22 @@ class RiosCLI(cmd.Cmd):
             print(*self.tracker.products)
         elif subcommand == "start":
             if self.tracker.running:
-                print("Price tracker already running...")
+                print(f"{Fore.RED}Price tracker already running...")
                 return
             self.tracker.start()
+            print(f"{Fore.GREEN}Price tracker started.")
         elif subcommand == "stop":
             if not self.tracker.running:
-                print("Price tracker is not running.")
+                print(f"{Fore.RED}Price tracker is not running.")
                 return
             self.tracker.stop()
+            print(f"{Fore.GREEN}Price tracker stopped.")
         else:
             self.default(subcommand)
+
+    def complete_ptrackers(self, text, line, begidx, endidx):
+        subcommands = ["start", "stop"]
+        return AutoCompletion.autocomplete_closer_match_of(subcommands, text, line, begidx, endidx)
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
@@ -644,14 +648,14 @@ class RiosCLI(cmd.Cmd):
     def do_reload(self, line):
         """Reloads/Restarts the CLI."""
         if line == "config":
-            print("Reloading config...")
+            print(f"{Fore.CYAN}[!] Reloading config...")
             self.config.reload()
-            print("Reloaded config!")
+            print(f"{Fore.CYAN}Reloaded config!")
             return
 
-        print("Running postloop...")
+        print(f"{Fore.LIGHTBLACK_EX}Running postloop...")
         self.postloop()
 
-        print("Reloading...")
+        print(f"{Fore.WHITE}Reloading...")
         python = sys.executable
         os.execl(python, python, *sys.argv)
