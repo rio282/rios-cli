@@ -4,8 +4,6 @@ import sys
 import shutil
 import webbrowser
 
-import win32gui, win32con
-from fuzzywuzzy import fuzz
 from psutil._common import bytes2human
 
 from colorama import init, Fore
@@ -71,11 +69,6 @@ class RiosCLI(cmd.Cmd):
         self.tracker = Tracker(self.config.config.get(section="PRICE CHARTING", option="listing_file"),
                                self.config.config.getint(section="PRICE CHARTING", option="refresh_time_minutes"))
 
-        # full screen (slow)
-        if use_full_screen:
-            self.hwnd = win32gui.GetForegroundWindow()
-            self.__set_fullscreen()
-
         os.system(f"title Rio's CLI -- {date.today()}")
 
     def __change_prompt_prefix_to(self, prefix: str = ""):
@@ -94,12 +87,6 @@ class RiosCLI(cmd.Cmd):
 
     def __on_error(self, error_exception: Exception):
         print(f"{Fore.RED}[!] An error has occurred: {error_exception}")
-
-    def __set_fullscreen(self):
-        win32gui.ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
-
-    def __minimize_window(self):
-        win32gui.ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
 
     def list_files(self, files: List[Tuple[str, float]]):
         print()
@@ -395,7 +382,7 @@ class RiosCLI(cmd.Cmd):
             # choose episode
             anime_dir = os.path.join(animes_dir, anime_name)
             episodes = file_system.get_files_in_directory(anime_dir)
-            episodes = [ep[0].removesuffix(".ts") for ep in episodes if ep[0].endswith(".ts")]
+            episodes = sorted([ep[0].removesuffix(".ts") for ep in episodes if ep[0].endswith(".ts")], key=int)
 
             episodes.append("Exit")
             episode = InteractiveMenu.spawn(episodes, title="Choose an episode:")
@@ -628,12 +615,6 @@ class RiosCLI(cmd.Cmd):
             return
 
         webbrowser.open(selected_result.href, new=0, autoraise=True)
-
-    def do_hide(self, line):
-        """Hides (minimizes) console window."""
-        print(Fore.RESET + "Sshh!")
-        print(Fore.RESET + "(Cya soon!)")
-        self.__minimize_window()
 
     def do_clear(self, line):
         """Clears screen."""
