@@ -560,7 +560,7 @@ class RiosCLI(cmd.Cmd):
             subcommands = subcommands.split()
             subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
 
-            if subcommand == "keys":
+            if subcommand == "key":
                 ssid_password = network.get_ssid_password()
                 print(Fore.GREEN + ssid_password)
             else:
