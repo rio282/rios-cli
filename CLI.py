@@ -368,7 +368,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_anime(self, line):
         """Anime."""
-        result = InteractiveMenu.spawn(["Download Anime", "Watch Downloaded Animes", "Exit"]).lower()
+        result = InteractiveMenu.spawn(["Watch Anime Offline", "Download Anime", "Exit"]).lower()
         if result == "exit":
             return
 
@@ -380,14 +380,21 @@ class RiosCLI(cmd.Cmd):
 
         # actual
         if result == "download anime":
-            # TODO: make option for, Continue downloading an anime or Download a new anime
-            #   Make it list the downloaded animes, we can use the episode name as the number and download the next one
-
-            # lookup anime
-            anime_name = InputMenu.spawn("Anime Name: ")
-            if not anime_name:
-                self.do_anime(line)
+            new_or_continue = InteractiveMenu.spawn(["Continue anime", "New anime", "Exit"],
+                                                    title="Do you wish to continue or start a new anime?").lower()
+            if new_or_continue == "continue anime":
+                # choose from downloaded animes
+                downloaded_animes = file_system.get_directories_in_directory(animes_dir)
+                anime_name = InteractiveMenu.spawn(downloaded_animes, title="Which anime do you wish to continue?")
+            elif new_or_continue == "new anime":
+                # lookup anime
+                anime_name = InputMenu.spawn("Anime Name: ")
+                if not anime_name:
+                    self.do_anime(line)
+                    return
+            else:
                 return
+
             animes = anime.lookup.search_anime_by_name(anime_name)
             if not animes:
                 print(f"{Fore.RED}No animes found with name: '{anime_name}'")
@@ -404,10 +411,11 @@ class RiosCLI(cmd.Cmd):
             try:
                 print(f"{Fore.GREEN}{anime_name} - Episode: {episode}")
                 anime.downloader.download_episode(chosen_anime, int(episode), verbose=verbose)
+                print()
                 print(f"{Fore.GREEN}Successfully download episode {episode} from '{chosen_anime}'!")
             except Exception as e:
                 self.__on_error(e)
-        elif result == "watch downloaded animes":
+        elif result == "watch anime offline":
             # choose anime
             animes = file_system.get_directories_in_directory(animes_dir)
             animes.append("Exit")
@@ -418,7 +426,7 @@ class RiosCLI(cmd.Cmd):
             # choose episode
             anime_dir = os.path.join(animes_dir, anime_name)
             episodes = file_system.get_files_in_directory(anime_dir)
-            episodes = sorted([ep[0].removesuffix(".ts") for ep in episodes if ep[0].endswith(".ts")], key=int)
+            episodes = sorted([ep[0].removesuffix(".mp4") for ep in episodes if ep[0].endswith(".mp4")], key=int)
 
             episodes.append("Exit")
             episode = InteractiveMenu.spawn(episodes, title="Choose an episode:")
@@ -426,8 +434,11 @@ class RiosCLI(cmd.Cmd):
                 return
 
             # play episode
-            episode_file = os.path.join(anime_dir, f"{episode}.ts")
+            episode_file = os.path.join(anime_dir, f"{episode}.mp4")
             self.do_open(episode_file)
+
+    def complete_anime(self, text, line, begidx, endidx):
+        return ["--verbose"]
 
     def do_music(self, subcommand):
         """Opens music player. Currently only playlist support."""

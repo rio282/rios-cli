@@ -42,14 +42,14 @@ class Downloader:
             downloader.download(
                 stream=stream,
                 download_path=download_path,
-                container=".mkv",
-                ffmpeg=False
+                container=".mp4",
+                ffmpeg=True
             )
         except OSError:
             # Stupid remixer can't find specified file. So dumb...
             pass
         except AttributeError:
-            # Page is broken somehow
+            # Page is broken somehow, i.e. anime not available anymore.
             raise Exception(f"AniPy-API can't find stream for '{anime.name}'")
         except:
             raise

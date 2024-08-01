@@ -19,11 +19,7 @@ class Loader:
         Sets the loading bar value.
         :param progress: Value between 0 and 100(%).
         """
-        if 0 <= progress <= 100:
-            self.percent_completed = progress
-        else:
-            raise ValueError("Progress value must be between 0 and 100")
-
+        self.percent_completed = max(0.0, min(progress, 100.0))
         self.display_loading_bar()
 
     def display_loading_bar(self) -> None:
