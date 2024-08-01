@@ -124,7 +124,9 @@ class RiosCLI(cmd.Cmd):
         web_searcher.load_cache()
 
     def postloop(self):
-        self.do_ptrackers("stop")
+        if self.tracker.running:
+            self.tracker.stop()
+
         file_system.save_cache()
         web_searcher.save_cache()
 
@@ -322,6 +324,10 @@ class RiosCLI(cmd.Cmd):
 
     def do_youtube(self, video_url):
         """Parses YouTube command(s). (PyTube is currently broken)."""
+        if not video_url:
+            print(f"{Fore.RED}Video url missing.")
+            return
+
         result = InteractiveMenu.spawn(["Video + Audio", "Audio only", "Exit"]).lower()
         if result == "exit":
             return
