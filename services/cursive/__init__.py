@@ -1,8 +1,11 @@
 import curses
 from typing import List, Optional, Any
 
+import curses
+from typing import List, Optional, Any
 
-class InteractiveMenu:
+
+class ListMenu:
     @staticmethod
     def spawn(with_options: List[str], title: Optional[str] = None, use_indexes: bool = True) -> Optional[Any]:
         def menu(stdscr):
@@ -20,6 +23,10 @@ class InteractiveMenu:
             start_idx = 0
 
             current_row = 0
+            input_mode = False
+            input_str = ""
+            line_prompt_text = "Go to option (press 'Enter' to confirm, 'Esc' to cancel): "
+
             while True:
                 stdscr.clear()
 
@@ -40,20 +47,55 @@ class InteractiveMenu:
                     else:
                         stdscr.addstr(index - start_idx + 1, 0, row_str)
 
-                # update selection
-                key = stdscr.getch()
-                if key == curses.KEY_UP and current_row > 0:
-                    current_row -= 1
-                    if current_row < start_idx:
-                        start_idx -= 1
-                elif key == curses.KEY_DOWN and current_row < len(with_options) - 1:
-                    current_row += 1
-                    if current_row >= end_idx:
-                        start_idx += 1
-                elif key == ord('\n'):
-                    return with_options[current_row]
+                if input_mode:
+                    stdscr.addstr(max_y - 1, 0, line_prompt_text)
+                    stdscr.addstr(max_y - 1, len(line_prompt_text), input_str)
+                else:
+                    stdscr.addstr(max_y - 1, 0, " Press 'q' to quit, ':' to enter option number.")
 
                 stdscr.refresh()
+
+                # update selection
+                key = stdscr.getch()
+
+                if input_mode:
+                    if key == curses.KEY_ENTER or key == 10:
+                        try:
+                            target_option = int(input_str) - 1
+                            if 0 <= target_option < len(with_options):
+                                current_row = target_option
+                                start_idx = max(0, current_row - view_height + 1)
+                        except ValueError:
+                            pass
+                        input_mode = False
+                        input_str = ""
+                        stdscr.clear()
+                        continue
+                    elif key == 27:  # Escape key
+                        input_mode = False
+                        input_str = ""
+                        stdscr.clear()
+                        continue
+                    elif key == 8:  # win32 backspace key (doesn't make sense but ok)
+                        input_str = input_str[:-1]
+                    elif 32 <= key <= 126:
+                        input_str += chr(key)
+                else:
+                    if key == curses.KEY_UP and current_row > 0:
+                        current_row -= 1
+                        if current_row < start_idx:
+                            start_idx -= 1
+                    elif key == curses.KEY_DOWN and current_row < len(with_options) - 1:
+                        current_row += 1
+                        if current_row >= end_idx:
+                            start_idx += 1
+                    elif key == ord(':'):
+                        input_mode = True
+                        input_str = ""
+                    elif key == ord('q'):
+                        return None
+                    elif key == ord('\n'):
+                        return with_options[current_row]
 
         if len(with_options) == 0:
             return None

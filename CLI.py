@@ -13,7 +13,7 @@ from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
 from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
 from services.price_charting import Tracker
-from services.cursive import InteractiveMenu, SliderMenu, TextPane
+from services.cursive import ListMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
 from typing import Final, List, Tuple
 from playsound import playsound
@@ -354,10 +354,11 @@ class RiosCLI(cmd.Cmd):
             print(f"{Fore.RED}Video url missing.")
             return
 
-        result = InteractiveMenu.spawn(["Video + Audio", "Audio only", "Exit"]).lower()
-        if result == "exit":
+        result = ListMenu.spawn(["Video + Audio", "Audio only"])
+        if not result:
             return
 
+        result = result.lower()
         audio_only = result == "audio only"
         success = youtube.downloader.download(video_url, audio_only)
 
@@ -368,8 +369,8 @@ class RiosCLI(cmd.Cmd):
 
     def do_anime(self, line):
         """Anime."""
-        result = InteractiveMenu.spawn(["Watch Anime Offline", "Download Anime", "Exit"]).lower()
-        if result == "exit":
+        result = ListMenu.spawn(["Watch Anime Offline", "Download Anime"])
+        if not result:
             return
 
         verbose = "--verbose" in line
@@ -379,13 +380,18 @@ class RiosCLI(cmd.Cmd):
         self.do_mkdir(animes_dir, silent=True)
 
         # actual
+        result = result.lower()
         if result == "download anime":
-            new_or_continue = InteractiveMenu.spawn(["Continue anime", "New anime", "Exit"],
-                                                    title="Do you wish to continue or start a new anime?").lower()
+            new_or_continue = ListMenu.spawn(["Continue anime", "New anime"],
+                                             title="Do you wish to continue or start a new anime?")
+            if not new_or_continue:
+                return
+
+            new_or_continue = new_or_continue.lower()
             if new_or_continue == "continue anime":
                 # choose from downloaded animes
                 downloaded_animes = file_system.get_directories_in_directory(animes_dir)
-                anime_name = InteractiveMenu.spawn(downloaded_animes, title="Which anime do you wish to continue?")
+                anime_name = ListMenu.spawn(downloaded_animes, title="Which anime do you wish to continue?")
             elif new_or_continue == "new anime":
                 # lookup anime
                 anime_name = InputMenu.spawn("Anime Name: ")
@@ -401,11 +407,13 @@ class RiosCLI(cmd.Cmd):
                 return
 
             # choose anime
-            chosen_anime = InteractiveMenu.spawn(animes, "Choose an anime:")
+            chosen_anime = ListMenu.spawn(animes, "Choose an anime:")
 
             # choose episode
             episodes = anime.lookup.get_episodes_by_anime(chosen_anime)
-            episode = InteractiveMenu.spawn(episodes, "Choose an episode:", use_indexes=False)
+            episode = ListMenu.spawn(episodes, "Choose an episode:", use_indexes=False)
+            if not episode:
+                return
 
             # download episode
             try:
@@ -418,9 +426,8 @@ class RiosCLI(cmd.Cmd):
         elif result == "watch anime offline":
             # choose anime
             animes = file_system.get_directories_in_directory(animes_dir)
-            animes.append("Exit")
-            anime_name = InteractiveMenu.spawn(animes, title="Choose an anime to watch:")
-            if anime_name.lower() == "exit":
+            anime_name = ListMenu.spawn(animes, title="Choose an anime to watch:")
+            if not anime_name:
                 return
 
             # choose episode
@@ -428,9 +435,8 @@ class RiosCLI(cmd.Cmd):
             episodes = file_system.get_files_in_directory(anime_dir)
             episodes = sorted([ep[0].removesuffix(".mp4") for ep in episodes if ep[0].endswith(".mp4")], key=int)
 
-            episodes.append("Exit")
-            episode = InteractiveMenu.spawn(episodes, title="Choose an episode:")
-            if episode.lower() == "exit":
+            episode = ListMenu.spawn(episodes, title="Choose an episode:")
+            if not episode:
                 return
 
             # play episode
@@ -459,7 +465,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         playlists = file_system.get_directories_in_directory(os.path.join(os.path.expanduser("~/Music"), "Playlists"))
-        playlist_name = InteractiveMenu.spawn(playlists, title="Choose a playlist:")
+        playlist_name = ListMenu.spawn(playlists, title="Choose a playlist:")
 
         # stop current stuff before continuing
         if music_player.now_playing:
@@ -472,7 +478,7 @@ class RiosCLI(cmd.Cmd):
         """Opens config editor."""
         # select section
         sections = [item[0] for item in self.config.config.items()]  # because config.sections() doesn't include DEFAULT
-        section = InteractiveMenu.spawn(sections, "Section")
+        section = ListMenu.spawn(sections, "Section")
 
         # fix data because configparser is stupid
         if section == "DEFAULT":
@@ -487,7 +493,7 @@ class RiosCLI(cmd.Cmd):
             options = [opt for opt in options if opt not in default_options]
 
         # select option
-        option = InteractiveMenu.spawn(options, "Option")
+        option = ListMenu.spawn(options, "Option")
 
         # change option value
         old_value = self.config.config.get(section, option)
@@ -498,7 +504,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         # confirm change
-        confirmation = InteractiveMenu.spawn(
+        confirmation = ListMenu.spawn(
             ["Confirm", "Cancel"],
             title=f"{option}: {old_value} -> {new_value}?"
         ).lower()
@@ -636,9 +642,9 @@ class RiosCLI(cmd.Cmd):
         if line:
             subcommand = line
         else:
-            subcommand = InteractiveMenu.spawn(["Scan", "Exit"]).lower()
+            subcommand = ListMenu.spawn(["Scan"])
 
-        if subcommand == "exit":
+        if not subcommand:
             return
         elif subcommand == "scan":
             connections = com.connections
@@ -653,7 +659,9 @@ class RiosCLI(cmd.Cmd):
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
         query = query.strip()
-        search_type = InteractiveMenu.spawn(["Web", "Locally", "Exit"], "Where do you want to search?").lower()
+        search_type = ListMenu.spawn(["Web", "Locally"], "Where do you want to search?")
+        if not search_type:
+            return
 
         if search_type == "locally":
             print(f"{Fore.LIGHTBLACK_EX}Searching locally for: '{query}'...")
@@ -662,20 +670,13 @@ class RiosCLI(cmd.Cmd):
         elif search_type == "web":
             print(f"{Fore.LIGHTBLACK_EX}Searching the web for: '{query}'...")
             results = web_searcher.search(query)
-        elif search_type == "exit":
-            return
         else:
             self.default(query)
             return
 
-        # create a copy of the results list and add "== Exit ==" to it
-        exit_text = ">>> Exit"
-        results_with_exit = results.copy()
-        results_with_exit.append(WebSearchResult(exit_text, ""))
-
-        result = InteractiveMenu.spawn([r.title for r in results_with_exit], f"Search results ({len(results)})")
-        selected_result = next((r for r in results_with_exit if r.title == result), None)
-        if selected_result.title == exit_text:
+        result = ListMenu.spawn([r.title for r in results], f"Search results ({len(results)})")
+        selected_result = next((r for r in results if r.title == result), None)
+        if not selected_result:
             return
 
         webbrowser.open(selected_result.href, new=0, autoraise=True)
