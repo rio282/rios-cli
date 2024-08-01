@@ -18,6 +18,7 @@ class MusicPlayer:
         self.queue: PriorityQueue = PriorityQueue()
         self.current_playlist: Optional[Playlist] = None
         self.playlist_thread: Optional[threading.Thread] = None
+        self.is_paused: bool = False
         pygame.init()
         pygame.mixer.init()
 
@@ -54,9 +55,10 @@ class MusicPlayer:
     def _play_playlist_in_background(self, _playlist: Playlist) -> None:
         for _song in _playlist.songs:
             self.play_song(_song, from_playlist=_playlist)
-            while pygame.mixer.music.get_busy():
-                # wait for song to finish
-                sleep(1)
+            while pygame.mixer.music.get_busy() or self.is_paused:
+                # wait for song to finish or resume from pause
+                # reduce sleep time while paused to improve responsiveness
+                sleep(0.1 if self.is_paused else 1)
 
     def play_song(self, _song: Song, from_playlist: Optional[Playlist] = None) -> None:
         self.now_playing = _song
@@ -81,9 +83,11 @@ class MusicPlayer:
 
     def pause(self) -> None:
         pygame.mixer.music.pause()
+        self.is_paused = True
 
     def resume(self) -> None:
         pygame.mixer.music.unpause()
+        self.is_paused = False
 
     def stop(self) -> None:
         pygame.mixer.music.stop()
