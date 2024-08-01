@@ -266,6 +266,32 @@ class RiosCLI(cmd.Cmd):
         return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
                                                 AutoCompletion.FILES)
 
+    def do_copy(self, filename):
+        """Copies a file or directory."""
+        file_path = os.path.join(self.current_directory, filename)
+        try:
+            if not os.path.exists(file_path):
+                print(f"File '{filename}' not found.")
+                return
+
+            destination = os.path.join(self.current_directory, filename)
+
+            if os.path.isdir(file_path):
+                shutil.copytree(file_path, destination)
+            else:
+                shutil.copy(file_path, destination)
+
+            print(f"Copied: {file_path} to {destination}")
+        except PermissionError as e:
+            print(f"{Fore.RED}Permission denied.")
+        except FileExistsError as e:
+            print(f"{Fore.RED}File already exists in this directory.")
+        except Exception as e:
+            self.__on_error(e)
+
+    def complete_copy(self, text, line, begidx, endidx):
+        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
+
     def do_rm(self, filename):
         """Removes a file or directory."""
         file_path = os.path.join(self.current_directory, filename)
