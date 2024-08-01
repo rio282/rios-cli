@@ -426,13 +426,22 @@ class RiosCLI(cmd.Cmd):
             episode_file = os.path.join(anime_dir, f"{episode}.ts")
             self.do_open(episode_file)
 
-    def do_music(self, playlist_name):
+    def do_music(self, subcommand):
         """Opens music player. Currently only playlist support."""
         print("WIP!")
         print(music_pepe)
 
-        if not playlist_name:
-            playlist_name = InputMenu.spawn("Playlist name: ")
+        if subcommand == "pause":
+            music_player.pause()
+        elif subcommand == "stop":
+            music_player.stop()
+        elif subcommand == "resume" or subcommand == "play":
+            music_player.resume()
+        else:
+            self.default(subcommand)
+
+        playlists = file_system.get_directories_in_directory(os.path.join(os.path.expanduser("~/Music"), "Playlists"))
+        playlist_name = InteractiveMenu.spawn(playlists, title="Choose a playlist:")
 
         playlist = MusicPlayer.load_playlist_by_name(playlist_name)
         music_player.play_playlist(playlist)

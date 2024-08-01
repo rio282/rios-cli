@@ -1,4 +1,6 @@
 import os
+import threading
+from time import sleep
 from queue import PriorityQueue
 from typing import Optional
 
@@ -13,8 +15,9 @@ from services.music.song import Song
 class MusicPlayer:
     def __init__(self):
         self.now_playing: Optional[Song] = None
-        self.current_playlist: Optional[Playlist] = None
         self.queue: PriorityQueue = PriorityQueue()
+        self.current_playlist: Optional[Playlist] = None
+        self.playlist_thread: Optional[threading.Thread] = None
         pygame.init()
         pygame.mixer.init()
 
@@ -41,9 +44,19 @@ class MusicPlayer:
         return _playlist
 
     def play_playlist(self, _playlist: Playlist) -> None:
-        # TODO: wait for song to finish
+        if self.playlist_thread and self.playlist_thread.is_alive():
+            print("A playlist is already playing. Please stop the current playlist before starting a new one.")
+            return
+
+        self.playlist_thread = threading.Thread(target=self._play_playlist_in_background, args=(_playlist,))
+        self.playlist_thread.start()
+
+    def _play_playlist_in_background(self, _playlist: Playlist) -> None:
         for _song in _playlist.songs:
             self.play_song(_song, from_playlist=_playlist)
+            while pygame.mixer.music.get_busy():
+                # wait for song to finish
+                sleep(1)
 
     def play_song(self, _song: Song, from_playlist: Optional[Playlist] = None) -> None:
         self.now_playing = _song
