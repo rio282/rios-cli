@@ -22,7 +22,6 @@ class Config:
 
     def create_default_config(self) -> None:
         self.__overwrite_default_section()
-        self.__overwrite_price_charting_section()
 
         # save
         self.save_config()
@@ -32,15 +31,4 @@ class Config:
         self.config["DEFAULT"] = {
             "search_threshold": "50",
             "display_intro": "yes",
-        }
-
-    def __overwrite_price_charting_section(self) -> None:
-        price_charting_listing_file = "./cards.csv"
-        price_charting_listing_file_path = price_charting_listing_file.replace("./", f"{self.config_dir}/")
-        if not os.path.exists(price_charting_listing_file_path):
-            open(file=price_charting_listing_file_path, mode="x")
-
-        self.config["PRICE CHARTING"] = {
-            "refresh_time_minutes": f"{12 * 60}",
-            "listing_file": price_charting_listing_file_path
         }

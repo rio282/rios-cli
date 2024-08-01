@@ -1,28 +1,24 @@
 import cmd
 import os
-import sys
 import shutil
+import sys
 import webbrowser
-
-from psutil._common import bytes2human
+from datetime import date, datetime
+from pprint import pprint
+from typing import Final, List, Tuple
 
 from colorama import init, Fore
-from pprint import pprint
+from playsound import playsound
+from psutil._common import bytes2human
 
-from etc.utils import truncate_filename, AutoCompletion, is_integer
 from etc.pepes import *
+from etc.utils import truncate_filename, AutoCompletion, is_integer
 from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
-from services.price_charting import Tracker
 from services.cursive import ListMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
-from typing import Final, List, Tuple
-from playsound import playsound
-from datetime import date, datetime
-
+from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
-from services.search.web import WebSearchResult
-from services.internal.config import Config
 
 intro_logo: Final[str] = Fore.GREEN + r"""
                                                       ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
@@ -64,10 +60,6 @@ class RiosCLI(cmd.Cmd):
         self.config = Config(config_dir)
         if not os.path.exists(self.config.config_file):
             self.config.create_default_config()
-
-        # load tracker
-        self.tracker = Tracker(self.config.config.get(section="PRICE CHARTING", option="listing_file"),
-                               self.config.config.getint(section="PRICE CHARTING", option="refresh_time_minutes"))
 
         os.system(f"title Rio's CLI -- {date.today()}")
 
@@ -124,9 +116,6 @@ class RiosCLI(cmd.Cmd):
         web_searcher.load_cache()
 
     def postloop(self):
-        if self.tracker.running:
-            self.tracker.stop()
-
         file_system.save_cache()
         web_searcher.save_cache()
 
@@ -517,32 +506,6 @@ class RiosCLI(cmd.Cmd):
         self.config.config[section][option] = new_value
         self.config.save_config()
         self.config.reload()
-
-    def do_ptrackers(self, subcommand):
-        """Price trackers for different sites."""
-        if not subcommand:
-            print(
-                f"{Fore.GREEN}Tracked (Items: {len(self.tracker.products)}, Last tracked: {self.tracker.last_tracked}):"
-            )
-            print(*self.tracker.products)
-        elif subcommand == "start":
-            if self.tracker.running:
-                print(f"{Fore.RED}Price tracker already running...")
-                return
-            self.tracker.start()
-            print(f"{Fore.GREEN}Price tracker started.")
-        elif subcommand == "stop":
-            if not self.tracker.running:
-                print(f"{Fore.RED}Price tracker is not running.")
-                return
-            self.tracker.stop()
-            print(f"{Fore.GREEN}Price tracker stopped.")
-        else:
-            self.default(subcommand)
-
-    def complete_ptrackers(self, text, line, begidx, endidx):
-        subcommands = ["start", "stop"]
-        return AutoCompletion.autocomplete_closer_match_of(subcommands, text, line, begidx, endidx)
 
     def do_now(self, line):
         """Shows current date (along with day of week) and time."""
