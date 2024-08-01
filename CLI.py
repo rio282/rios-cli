@@ -440,9 +440,7 @@ class RiosCLI(cmd.Cmd):
         print("WIP!")
         print(music_pepe)
 
-        if subcommand == "":
-            pass
-        else:
+        if subcommand != "":
             if subcommand == "pause":
                 music_player.pause()
             elif subcommand == "stop":
@@ -454,12 +452,19 @@ class RiosCLI(cmd.Cmd):
             return
 
         playlists = file_system.get_directories_in_directory(os.path.join(os.path.expanduser("~/Music"), "Playlists"))
-        playlist_name = ListMenu.spawn(playlists, title="Choose a playlist:")
+        if not playlists:
+            print(f"{Fore.RED}No playlists found.")
+            return
 
-        # stop current stuff before continuing
+        playlist_name = ListMenu.spawn(playlists, title="Choose a playlist:")
+        if not playlist_name:
+            return
+
+        # stop current music before continuing
         if music_player.now_playing:
             music_player.stop()
 
+        # load & play the selected playlist
         playlist = MusicPlayer.load_playlist_by_name(playlist_name)
         music_player.play_playlist(playlist)
 
