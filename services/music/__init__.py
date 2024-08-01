@@ -90,6 +90,8 @@ class MusicPlayer:
         self.now_playing = None
         self.current_playlist = None
         self.queue = PriorityQueue()
+        if self.playlist_thread and self.playlist_thread.is_alive():
+            self.playlist_thread.join()
 
     def next(self) -> None:
         if not self.now_playing:

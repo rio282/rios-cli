@@ -433,14 +433,16 @@ class RiosCLI(cmd.Cmd):
 
         if subcommand == "":
             pass
-        elif subcommand == "pause":
-            music_player.pause()
-        elif subcommand == "stop":
-            music_player.stop()
-        elif subcommand == "resume" or subcommand == "play":
-            music_player.resume()
         else:
-            self.default(subcommand)
+            if subcommand == "pause":
+                music_player.pause()
+            elif subcommand == "stop":
+                music_player.stop()
+            elif subcommand == "resume" or subcommand == "play":
+                music_player.resume()
+            else:
+                self.default(subcommand)
+            return
 
         playlists = file_system.get_directories_in_directory(os.path.join(os.path.expanduser("~/Music"), "Playlists"))
         playlist_name = InteractiveMenu.spawn(playlists, title="Choose a playlist:")
