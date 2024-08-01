@@ -1,4 +1,6 @@
 import os
+import shutil
+import subprocess
 import sys
 import argparse
 import threading
@@ -61,6 +63,36 @@ def show_error_popup(error: Exception or str) -> None:
     window.mainloop()
 
 
+def install_ffmpeg():
+    # TODO: throw in FFMPEG helper
+    try:
+        if sys.platform == "win32":
+            subprocess.check_call(["choco", "install", "ffmpeg", "-y"])
+        else:
+            raise EnvironmentError("Unsupported platform. Please install ffmpeg and ffprobe manually.")
+        print("ffmpeg and ffprobe installed successfully.")
+    except Exception as ex:
+        raise EnvironmentError(f"Failed to install ffmpeg and ffprobe: {ex}")
+
+
+def check_for_ffmpeg():
+    # TODO: throw in FFMPEG helper
+    ffmpeg_path = shutil.which("ffmpeg")
+    ffprobe_path = shutil.which("ffprobe")
+
+    if ffmpeg_path and ffprobe_path:
+        print(f"ffmpeg found at {ffmpeg_path}")
+        print(f"ffprobe found at {ffprobe_path}")
+    else:
+        missing = []
+        if not ffmpeg_path:
+            missing.append("ffmpeg")
+        if not ffprobe_path:
+            missing.append("ffprobe")
+        raise EnvironmentError(
+            f"Missing dependencies: {', '.join(missing)}. Please install them and ensure they are in your PATH.")
+
+
 def is_correct_python_version() -> bool:
     version = sys.version_info
     correct_major_version = version.major >= min_required_python_version["major"]
@@ -72,8 +104,8 @@ def is_correct_python_version() -> bool:
 def main(argc: int, argv: argparse.Namespace) -> None:
     try:
         # loading text
-        os.system("title Loading...")
-        print("Loading...")
+        os.system("title Loading CLI...")
+        print("Loading CLI...")
 
         # setup
         cli = RiosCLI()
@@ -98,6 +130,8 @@ def main(argc: int, argv: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
+    print("Setting up...")
+
     if PRETTY_ERRORS:  # :3
         pretty_errors.configure(
             filename_display=pretty_errors.FILENAME_FULL,
@@ -116,10 +150,20 @@ if __name__ == "__main__":
     }
     if not is_correct_python_version():
         raise EnvironmentError(
-            f"Incorrect Python version. Min required: {min_required_python_version['major']}.{min_required_python_version['minor']}.0"
+            f"Incorrect Python version. Min required: {min_required_python_version["major"]}.{min_required_python_version["minor"]}.0"
         )
 
     try:
+        try:
+            check_for_ffmpeg()
+        except EnvironmentError:
+            print("FFMPEG not found!")
+            wants_install = input("Do you wish to install FFMPEG (requires chocolately)? [Y/N]: ").strip().lower()
+            if wants_install in ["y", "yes"]:
+                install_ffmpeg()
+            else:
+                raise
+
         parser = argparse.ArgumentParser(description="R-CLI with optional hot reloading")
         parser.add_argument("--enable-hot-reloading", action="store_true", help="Enable hot reloading")
         args = parser.parse_args()

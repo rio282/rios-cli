@@ -19,7 +19,7 @@ class Downloader:
         QUALITY_720P: Final[int] = 720
 
     def __init__(self):
-        self.loader = Loader("Downloading...")
+        self.loader = Loader("Downloading")
         self.animes_folder = os.path.join(os.path.expanduser("~/Videos"), "anime")
         self.verbose = False
 

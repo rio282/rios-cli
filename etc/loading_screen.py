@@ -1,11 +1,18 @@
+import itertools
 from typing import Final
+
+import colorama
 
 
 class Loader:
-    def __init__(self, loading_text: str = "Loading:"):
+    def __init__(self, loading_text: str = "Loading:", text_color: colorama.Fore = colorama.Fore.LIGHTGREEN_EX):
         self.loading_text: Final[str] = loading_text
+        self.text_color: colorama.Fore = text_color
+
         self.bar_length: Final[int] = 20
         self.percent_completed: int = 0
+        self.text_dot_cycle: itertools.cycle = itertools.cycle(['.', '..', '...'])
+        self.spinner_cycle: itertools.cycle = itertools.cycle(['|', '/', '-', '\\'])
 
     def update_loader(self, progress: float) -> None:
         """
@@ -23,7 +30,13 @@ class Loader:
         """
         Displays the loading bar.
         """
+        dots = "..." if self.percent_completed == 100 else next(self.text_dot_cycle)
+        spaces = " " * (3 - len(dots))
+        loading_text = f"{self.loading_text}{dots}{spaces}"
+
         completed_length = int(self.percent_completed / 100 * self.bar_length)
         empty_length = self.bar_length - completed_length
         bar = f"[{'#' * completed_length}{' ' * empty_length}]"
-        print(f"\r{self.loading_text} {bar} {self.percent_completed:.2f}%", end="", flush=True)
+
+        spinner = "-" if self.percent_completed == 100 else next(self.spinner_cycle)
+        print(f"\r{self.text_color}{loading_text} {bar} {spinner} {self.percent_completed:.2f}%", end="", flush=True)

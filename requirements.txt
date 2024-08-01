@@ -4,7 +4,7 @@ colorama>=0.4.6
 
 # media
 playsound==1.2.2
-pytube==15.0.0
+yt-dlp>=2024.07.25
 moviepy==1.0.3
 python-vlc==3.0.20123
 pycaw>=20240210

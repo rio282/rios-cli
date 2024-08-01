@@ -1,72 +1,74 @@
-import os.path
+import os
+from datetime import datetime
+from typing import Dict, Any
 
-import pytube.request
-from pytube import YouTube, Stream
+import yt_dlp
 
-from moviepy.editor import AudioFileClip
-
-from etc.loading_screen import Loader
 from etc import escape_windows_safe_filename
-from services.cursive import InteractiveMenu
+from etc.loading_screen import Loader
 
 
 class Downloader:
     def __init__(self):
-        pytube.request.default_range_size = 8_388_608  # 8 MB
-
-        self.video_id: str or None = None
         self.file_size: int = -1
-        self.percent_completed = -1
+        self.percent_completed: float = -1.0
 
-        self.music_folder = os.path.expanduser("~/Music")
-        self.video_folder = os.path.expanduser("~/Videos")
+        self.music_folder: str = os.path.expanduser("~/Music")
+        self.video_folder: str = os.path.expanduser("~/Videos")
 
-        self.loader = Loader("Downloading...")
+        self.loader: Loader = Loader("Downloading")
 
     def download(self, url: str, audio_only: bool = False) -> bool:
-        file_format = "webm" if audio_only else "mp4"
-
-        # prepare
         print("Preparing...")
-        yt = YouTube(url, on_progress_callback=self.__download_callback)
-        filename = f"{escape_windows_safe_filename(yt.title)}.{file_format}"
-        if os.path.exists(filename):
+        filename = escape_windows_safe_filename(str(datetime.now()))
+        download_dir = self.music_folder if audio_only else self.video_folder
+        ydl_opts = {
+            "quiet": True,
+            "restrictfilenames": True,
+            "noprogress": True,
+            "no_warnings": True,
+            "format": "bestaudio" if audio_only else "bestvideo+bestaudio",
+            "outtmpl": os.path.join(download_dir, f"{filename}.%(ext)s"),
+            "noplaylist": True,
+            "progress_hooks": [self.__download_callback],
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }] if audio_only else [],
+        }
+
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                print("Collecting video information...")
+                video_info = ydl.extract_info(url, download=False)
+                video_title = video_info["title"]
+                print(f"Video found: {video_title} @ {url}")
+
+                filename = f"{filename}.{'mp3' if audio_only else 'mp4'}"
+                full_path = os.path.join(download_dir, filename)
+
+                if os.path.exists(full_path):
+                    return False
+
+                self.file_size = video_info.get("filesize") or video_info.get("filesize_approx")
+                ydl.download([url])
+                print("\nFinalizing...")
+
+            print(f"File downloaded to: {full_path}")
+            return True
+
+        except yt_dlp.utils.DownloadError as e:
+            print(f"Error during download: {e}")
             return False
 
-        self.video_id = yt.video_id
-        self.file_size = yt.streams.get_highest_resolution().filesize
+    def __download_callback(self, download_data: Dict[str, Any]) -> None:
+        if download_data["status"] == "downloading":
+            percent_str = (download_data.get("_percent_str", "0.0%")
+                           .strip()
+                           .replace("\x1b[0;94m", "")
+                           .replace("\x1b[0m", "")
+                           .removesuffix("%"))
 
-        # download
-        streams = yt.streams.filter(file_extension=file_format)
-        if audio_only:
-            streams = streams.filter(only_audio=True)
-        else:
-            streams = streams.filter(progressive=True)
-            streams = streams.order_by("resolution").desc()
-
-        download_path = self.music_folder if audio_only else self.video_folder
-        stream = streams.first()
-        stream.download(output_path=download_path, filename=filename)
-
-        # done
-        downloaded_location = os.path.join(download_path, filename)
-        print(f"\n\nFile downloaded to: {downloaded_location}")
-
-        if audio_only:
-            self.prompt_audio_file_conversion(downloaded_location)
-
-        return True
-
-    def prompt_audio_file_conversion(self, file_path: str, old_file_format: str = "webm",
-                                     new_file_format: str = "mp3") -> None:
-        result = InteractiveMenu.spawn(["Yes", "No"], "Do you wish to convert to mp3?")
-        wants_mp3_conversion = result.lower() == "yes"
-        if wants_mp3_conversion:
-            new_file_path = file_path.replace(old_file_format, new_file_format)
-            audio_clip = AudioFileClip(file_path)
-            audio_clip.write_audiofile(new_file_path)
-            os.remove(file_path)
-
-    def __download_callback(self, stream: Stream, chunk: bytes, bytes_remaining: int) -> None:
-        self.percent_completed = ((self.file_size - bytes_remaining) / self.file_size) * 100
-        self.loader.update_loader(self.percent_completed)
+            self.percent_completed = float(percent_str)
+            self.loader.update_loader(self.percent_completed)
