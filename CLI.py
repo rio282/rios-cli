@@ -473,6 +473,8 @@ class RiosCLI(cmd.Cmd):
         # select section
         sections = [item[0] for item in self.config.config.items()]  # because config.sections() doesn't include DEFAULT
         section = ListMenu.spawn(sections, "Section")
+        if not section:
+            return
 
         # fix data because configparser is stupid
         if section == "DEFAULT":
@@ -488,6 +490,8 @@ class RiosCLI(cmd.Cmd):
 
         # select option
         option = ListMenu.spawn(options, "Option")
+        if not option:
+            return
 
         # change option value
         old_value = self.config.config.get(section, option)
@@ -500,7 +504,8 @@ class RiosCLI(cmd.Cmd):
         # confirm change
         confirmation = ListMenu.spawn(
             ["Confirm", "Cancel"],
-            title=f"{option}: {old_value} -> {new_value}?"
+            title=f"{option}: {old_value} -> {new_value}?",
+            quittable=False
         ).lower()
 
         if confirmation == "cancel":

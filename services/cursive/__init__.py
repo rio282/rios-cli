@@ -7,7 +7,8 @@ from typing import List, Optional, Any
 
 class ListMenu:
     @staticmethod
-    def spawn(with_options: List[str], title: Optional[str] = None, use_indexes: bool = True) -> Optional[Any]:
+    def spawn(with_options: List[str], title: Optional[str] = None, use_indexes: bool = True,
+              quittable: bool = True) -> Optional[Any]:
         def menu(stdscr):
             stdscr.clear()
 
@@ -51,7 +52,10 @@ class ListMenu:
                     stdscr.addstr(max_y - 1, 0, line_prompt_text)
                     stdscr.addstr(max_y - 1, len(line_prompt_text), input_str)
                 else:
-                    stdscr.addstr(max_y - 1, 0, " Press 'q' to quit, ':' to enter option number.")
+                    if quittable:
+                        stdscr.addstr(max_y - 1, 0, " Press 'q' to quit, ':' to enter option number.")
+                    else:
+                        stdscr.addstr(max_y - 1, 0, " Press ':' to enter option number.")
 
                 stdscr.refresh()
 
@@ -92,7 +96,7 @@ class ListMenu:
                     elif key == ord(':'):
                         input_mode = True
                         input_str = ""
-                    elif key == ord('q'):
+                    elif key == ord('q') and quittable:
                         return None
                     elif key == ord('\n'):
                         return with_options[current_row]
