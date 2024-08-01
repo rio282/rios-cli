@@ -380,6 +380,9 @@ class RiosCLI(cmd.Cmd):
 
         # actual
         if result == "download anime":
+            # TODO: make option for, Continue downloading an anime or Download a new anime
+            #   Make it list the downloaded animes, we can use the episode name as the number and download the next one
+
             # lookup anime
             anime_name = InputMenu.spawn("Anime Name: ")
             if not anime_name:
