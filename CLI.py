@@ -338,7 +338,7 @@ class RiosCLI(cmd.Cmd):
         playsound(fart_sound_wav)
 
     def do_youtube(self, video_url):
-        """Parses YouTube command(s). (PyTube is currently broken)."""
+        """Parses YouTube command(s)."""
         if not video_url:
             print(f"{Fore.RED}Video url missing.")
             return
