@@ -67,32 +67,42 @@ class FuzzyMatcher:
 
 
 class AutoCompletion:
-    BOTH = auto()
-    DIRECTORIES = auto()
-    FILES = auto()
+    TYPE_BOTH = auto()
+    TYPE_DIRECTORIES = auto()
+    TYPE_FILES = auto()
+
+    MODE_STARTSWITH = auto()
+    MODE_PARTIAL = auto()
+    MODE_MATCH_ANY = auto()
 
     @staticmethod
-    def autocomplete_path(current_directory: str, text: str, line: str, begidx: int, endidx: int,
-                          completion_type=BOTH) -> List[str]:
+    def path(current_directory: str, text: str, line: str, begidx: int, endidx: int,
+             completion_type=TYPE_BOTH) -> List[str]:
         if not text:
             completion = os.listdir(current_directory)
         else:
             text_lower = text.lower()
             completion = [d for d in os.listdir(current_directory) if d.lower().startswith(text_lower)]
 
-        if completion_type == AutoCompletion.DIRECTORIES:
+        if completion_type == AutoCompletion.TYPE_DIRECTORIES:
             return [d for d in completion if os.path.isdir(os.path.join(current_directory, d))]
-        elif completion_type == AutoCompletion.FILES:
+        elif completion_type == AutoCompletion.TYPE_FILES:
             return [d for d in completion if os.path.isfile(os.path.join(current_directory, d))]
 
         return completion
 
     @staticmethod
-    def autocomplete_closer_match_of(possible_matches: List[str], text: str, line: str, begidx: int, endidx: int) -> \
-            List[str]:
+    def matches_of(possible_matches: List[str], text: str, line: str, begidx: int, endidx: int,
+                   completion_mode=MODE_STARTSWITH) -> List[str]:
         if not text:
             return possible_matches
 
         text = text.lower()
-        best_match = max(possible_matches, key=lambda match: fuzz.ratio(text, match))
-        return [best_match]
+
+        if completion_mode == AutoCompletion.MODE_PARTIAL:
+            best_match = max(possible_matches, key=lambda match: fuzz.ratio(text, match))
+            return [best_match]
+        elif completion_mode == AutoCompletion.MODE_MATCH_ANY:
+            return FuzzyMatcher.any_matches(text, possible_matches)
+
+        return [entry for entry in possible_matches if entry.lower().startswith(text)]

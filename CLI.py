@@ -156,8 +156,8 @@ class RiosCLI(cmd.Cmd):
             print(f"Directory '{directory}' does not exist.")
 
     def complete_cd(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
-                                                AutoCompletion.DIRECTORIES)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
+                                   AutoCompletion.TYPE_DIRECTORIES)
 
     def do_ls(self, directory):
         """Lists the files and directories in a directory."""
@@ -195,8 +195,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
-                                                AutoCompletion.DIRECTORIES)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
+                                   AutoCompletion.TYPE_DIRECTORIES)
 
     def do_open(self, filename):
         """Opens a file in the specified path."""
@@ -209,7 +209,7 @@ class RiosCLI(cmd.Cmd):
             print(f"Error trying to open file: {e}")
 
     def complete_open(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
     def do_create(self, filename, silent=False):
         """Create a new file in the current directory."""
@@ -252,34 +252,49 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_read(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
-                                                AutoCompletion.FILES)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
+                                   AutoCompletion.TYPE_FILES)
 
-    def do_copy(self, filename):
-        """Copies a file or directory."""
-        file_path = os.path.join(self.current_directory, filename)
+    def do_copy(self, line):
+        """Copies a file or directory (and its contents)."""
+        line = line.split()
+        # TODO: commands should always look for flags (starting with '--')
+
+        if len(line) > 2:
+            print(f"{Fore.RED}More than two arguments were found, they were ignored.")
+
+        item_to_be_copied = os.path.join(self.current_directory, line[0])
+        destination = os.path.join(self.current_directory, line[1])
+
         try:
-            if not os.path.exists(file_path):
-                print(f"File '{filename}' not found.")
-                return
+            # verify that both locations exist
+            if not os.path.exists(item_to_be_copied):
+                raise FileNotFoundError(f"File '{item_to_be_copied}' not found.")
+            if not os.path.exists(destination):
+                raise FileNotFoundError(f"Destination '{destination}' not found.")
 
-            destination = os.path.join(self.current_directory, filename)
+            # check if destination is an existing directory
+            if os.path.isfile(destination):
+                raise NotADirectoryError("Destination argument should be a directory, not a file.")
 
-            if os.path.isdir(file_path):
-                shutil.copytree(file_path, destination)
+            # verify type before copying
+            print(f"Copying...")
+            if os.path.isdir(item_to_be_copied):
+                shutil.copytree(item_to_be_copied, destination)
             else:
-                shutil.copy(file_path, destination)
-
-            print(f"Copied: {file_path} to {destination}")
+                shutil.copy(item_to_be_copied, destination)
+            print(f"Copied: {item_to_be_copied} to {destination}")
         except PermissionError as e:
             print(f"{Fore.RED}Permission denied.")
         except FileExistsError as e:
             print(f"{Fore.RED}File already exists in this directory.")
+        except (FileNotFoundError, NotADirectoryError) as e:
+            print(f"{Fore.RED}{e}")
         except Exception as e:
             self.__on_error(e)
 
     def complete_copy(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
     def do_rm(self, filename):
         """Removes a file or directory."""
@@ -299,7 +314,7 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_rm(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
     def do_zip(self, directory):
         """Zips a directory. (Subcommands available)"""
@@ -317,7 +332,7 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_zip(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
     def do_unzip(self, zip_file):
         """Unzips a directory."""
@@ -328,8 +343,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_unzip(self, text, line, begidx, endidx):
-        return AutoCompletion.autocomplete_path(self.current_directory, text, line, begidx, endidx,
-                                                AutoCompletion.FILES)
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
+                                   AutoCompletion.TYPE_FILES)
 
     def do_fart(self, line):
         """Plays fart sound."""
@@ -447,15 +462,19 @@ class RiosCLI(cmd.Cmd):
                 music_player.stop()
             elif subcommand == "resume" or subcommand == "play":
                 music_player.resume()
+            elif subcommand == "nowplaying":
+                print(f"{Fore.GREEN}Currently playing: {Fore.WHITE}{music_player.now_playing.name}")
             else:
                 self.default(subcommand)
             return
 
+        # look for available playlists
         playlists = file_system.get_directories_in_directory(os.path.join(os.path.expanduser("~/Music"), "Playlists"))
         if not playlists:
             print(f"{Fore.RED}No playlists found.")
             return
 
+        # let the user pick a playlist
         playlist_name = ListMenu.spawn(playlists, title="Choose a playlist:")
         if not playlist_name:
             return
@@ -466,7 +485,14 @@ class RiosCLI(cmd.Cmd):
 
         # load & play the selected playlist
         playlist = MusicPlayer.load_playlist_by_name(playlist_name)
+        print(
+            f"{Fore.GREEN}Picked playlist {Fore.WHITE}{playlist.name}{Fore.GREEN} with {Fore.WHITE}{len(playlist.songs)}{Fore.GREEN} song(s)."
+        )
         music_player.play_playlist(playlist)
+
+    def complete_music(self, text, line, begidx, endidx):
+        subcommands = ["pause", "stop", "resume", "play", "nowplaying"]
+        return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
 
     def do_config(self, line):
         """Opens config editor."""
