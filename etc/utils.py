@@ -67,8 +67,9 @@ class FuzzyMatcher:
 
 
 class AutoCompletion:
-    TYPE_BOTH = auto()
+    TYPE_ALL = auto()
     TYPE_DIRECTORIES = auto()
+    TYPE_DIRECTORIES_AND_ZIP = auto()
     TYPE_FILES = auto()
 
     MODE_STARTSWITH = auto()
@@ -77,7 +78,7 @@ class AutoCompletion:
 
     @staticmethod
     def path(current_directory: str, text: str, line: str, begidx: int, endidx: int,
-             completion_type=TYPE_BOTH) -> List[str]:
+             completion_type=TYPE_ALL) -> List[str]:
         if not text:
             completion = os.listdir(current_directory)
         else:
@@ -86,6 +87,10 @@ class AutoCompletion:
 
         if completion_type == AutoCompletion.TYPE_DIRECTORIES:
             return [d for d in completion if os.path.isdir(os.path.join(current_directory, d))]
+        elif completion_type == AutoCompletion.TYPE_DIRECTORIES_AND_ZIP:
+            return [
+                d for d in completion if os.path.isdir(os.path.join(current_directory, d)) or (
+                        os.path.isfile(os.path.join(current_directory, d)) and os.path.splitext(d)[1] == ".zip")]
         elif completion_type == AutoCompletion.TYPE_FILES:
             return [d for d in completion if os.path.isfile(os.path.join(current_directory, d))]
 

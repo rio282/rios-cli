@@ -162,6 +162,9 @@ class RiosCLI(cmd.Cmd):
     def do_ls(self, directory):
         """Lists the files and directories in a directory."""
         try:
+            directory = directory.strip()
+
+            # handle subcommands
             if directory == "--inspect-cache":
                 file_cache = file_system.file_cache
                 dir_cache = file_system.directory_cache
@@ -185,18 +188,27 @@ class RiosCLI(cmd.Cmd):
                 print_dirs = True
                 print_files = True
 
-            if print_dirs:
-                directories = file_system.get_directories_in_directory(directory, use_cache)
-                self.list_directories(directories)
-            if print_files:
-                files = file_system.get_files_in_directory(directory, use_cache)
-                self.list_files(files)
+            if os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip":
+                # zip files
+                zip_content = file_system.view_zip_content(directory)
+                if print_dirs:
+                    self.list_directories(zip_content.get("directories"))
+                if print_files:
+                    self.list_files(zip_content.get("files"))
+            else:
+                # normal directories
+                if print_dirs:
+                    directories = file_system.get_directories_in_directory(directory, use_cache)
+                    self.list_directories(directories)
+                if print_files:
+                    files = file_system.get_files_in_directory(directory, use_cache)
+                    self.list_files(files)
         except Exception as e:
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
-                                   AutoCompletion.TYPE_DIRECTORIES)
+                                   AutoCompletion.TYPE_DIRECTORIES_AND_ZIP)
 
     def do_open(self, filename):
         """Opens a file in the specified path."""
@@ -317,15 +329,8 @@ class RiosCLI(cmd.Cmd):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
     def do_zip(self, directory):
-        """Zips a directory. (Subcommands available)"""
+        """Zips a directory."""
         try:
-            if "--ls" in directory:
-                directory = directory.replace("--ls", "").strip()
-                zip_content = file_system.view_zip_content(directory)
-                self.list_directories(zip_content.get("directories"))
-                self.list_files(zip_content.get("files"))
-                return
-
             file_system.zip(directory)
             print(Fore.GREEN + f"Zipped: {directory}")
         except Exception as e:
