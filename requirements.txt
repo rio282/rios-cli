@@ -10,6 +10,8 @@ python-vlc==3.0.20123
 pycaw>=20240210
 anipy-api>=3.1.8
 pygame>=2.6.0
+sounddevice>=0.2.1
+pyaudio>=0.2.14
 
 # system
 pywin32>=306
@@ -26,3 +28,4 @@ beautifulsoup4>=4.12.3
 watchdog>=4.0.1
 fuzzywuzzy>=0.18.0
 python-Levenshtein>=0.25.1
+numpy>=2.0.1

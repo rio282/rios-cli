@@ -16,6 +16,7 @@ from etc.utils import truncate_filename, AutoCompletion, is_integer
 from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
 from services.cursive import ListMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
+from services.cursive.music import MusicVisualizer
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
@@ -467,8 +468,14 @@ class RiosCLI(cmd.Cmd):
                 music_player.stop()
             elif subcommand == "resume" or subcommand == "play":
                 music_player.resume()
-            elif subcommand == "nowplaying":
+            elif subcommand == "playing":
                 print(f"{Fore.GREEN}Currently playing: {Fore.WHITE}{music_player.now_playing.name}")
+            elif subcommand == "visualizer":
+                print("Experimental, not ready for use... ")
+
+                visualizer = MusicVisualizer()
+                visualizer.start_visualization()
+                visualizer.close_stream()
             else:
                 self.default(subcommand)
             return
@@ -496,7 +503,7 @@ class RiosCLI(cmd.Cmd):
         music_player.play_playlist(playlist)
 
     def complete_music(self, text, line, begidx, endidx):
-        subcommands = ["pause", "stop", "resume", "play", "nowplaying"]
+        subcommands = ["pause", "stop", "resume", "play", "playing", "visualizer"]
         return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
 
     def do_config(self, line):
