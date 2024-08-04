@@ -418,6 +418,8 @@ class RiosCLI(cmd.Cmd):
 
             # choose anime
             chosen_anime = ListMenu.spawn(animes, "Choose an anime:")
+            if not chosen_anime:
+                return
 
             # choose episode
             episodes = anime.lookup.get_episodes_by_anime(chosen_anime)
