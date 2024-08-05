@@ -9,7 +9,7 @@ from .record import Record
 class HistoryManager:
     def __init__(self, cache_dir):
         self.cache_dir: Final[str] = cache_dir
-        self.cache_file: Final[str] = f"{cache_dir}/history.cache"
+        self.cache_file: Final[str] = f"{cache_dir}/cmd.history"
         self.history: List[Record] = []
 
     def record_line(self, line) -> None:
