@@ -28,6 +28,7 @@ class FileSystem:
         directory = (directory
                      .replace("/", "\\")
                      .replace("--use-cache", "")
+                     .replace("--inspect-cache", "")
                      .replace("--dirs", "")
                      .replace("--files", "")
                      .strip())

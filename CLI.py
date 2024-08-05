@@ -13,7 +13,8 @@ from psutil._common import bytes2human
 
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer
-from services import youtube, anime, file_system, network, com, processes, statistics, web_searcher, local_searcher
+from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
+    history_manager
 from services.cursive import ListMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
 from services.cursive.music import MusicVisualizer
@@ -110,15 +111,19 @@ class RiosCLI(cmd.Cmd):
     def postcmd(self, stop, line):
         if line.strip() != "":
             print()  # add empty line for better readability
+
+        history_manager.record_line(line)
         return stop
 
     def preloop(self):
         file_system.load_cache()
         web_searcher.load_cache()
+        history_manager.load()
 
     def postloop(self):
         file_system.save_cache()
         web_searcher.save_cache()
+        history_manager.save()
 
     def emptyline(self):
         pass
@@ -636,20 +641,6 @@ class RiosCLI(cmd.Cmd):
             f"{'Free:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_free.ljust(align_length)} {disk_free.ljust(align_length)}"
         )
 
-    def do_net(self, subcommands):
-        """Extensive information about the network when used correctly."""
-        try:
-            subcommands = subcommands.split()
-            subcommand = subcommands.pop(0) if len(subcommands) > 0 else None
-
-            if subcommand == "key":
-                ssid_password = network.get_ssid_password()
-                print(Fore.GREEN + ssid_password)
-            else:
-                print(Fore.RED + "Unknown subcommand specified.")
-        except Exception as e:
-            self.__on_error(e)
-
     def do_com(self, line):
         """Allows interaction with COM port(s)."""
         if line:
@@ -659,7 +650,9 @@ class RiosCLI(cmd.Cmd):
 
         if not subcommand:
             return
-        elif subcommand == "scan":
+
+        subcommand = subcommand.lower()
+        if subcommand == "scan":
             connections = com.connections
             print(f"{Fore.GREEN}Connections:")
             if connections:
@@ -672,17 +665,25 @@ class RiosCLI(cmd.Cmd):
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
         query = query.strip()
+        if query.lower() == "--inspect-webcache":
+            pprint(web_searcher.results_cache)
+            return
+        elif query.lower() == "--inspect-localcache":
+            pprint("TODO!")
+            return
+
         search_type = ListMenu.spawn(["Web", "Locally"], "Where do you want to search?")
         if not search_type:
             return
 
-        if search_type == "locally":
+        search_type = search_type.lower()
+        if search_type == "web":
+            print(f"{Fore.LIGHTBLACK_EX}Searching the web for: '{query}'...")
+            results = web_searcher.search(query)
+        elif search_type == "locally":
             print(f"{Fore.LIGHTBLACK_EX}Searching locally for: '{query}'...")
             local_searcher.search_threshold = self.config.config.getint(section="DEFAULT", option="search_threshold")
             results = local_searcher.search(query)
-        elif search_type == "web":
-            print(f"{Fore.LIGHTBLACK_EX}Searching the web for: '{query}'...")
-            results = web_searcher.search(query)
         else:
             self.default(query)
             return
@@ -692,7 +693,10 @@ class RiosCLI(cmd.Cmd):
         if not selected_result:
             return
 
-        webbrowser.open(selected_result.href, new=0, autoraise=True)
+        if search_type == "web":
+            webbrowser.open(selected_result.href, new=0, autoraise=True)
+        else:
+            self.do_open(selected_result.href)
 
     def do_clear(self, line):
         """Clears screen."""
@@ -718,3 +722,23 @@ class RiosCLI(cmd.Cmd):
         print(f"{Fore.WHITE}Reloading...")
         python = sys.executable
         os.execl(python, python, *sys.argv)
+
+    def do__history(self, line):
+        """Allows you to inspect the command history."""
+        limit = 100
+        for record in history_manager.history[:min(limit, len(history_manager.history))]:
+            timestamp = f"{Fore.LIGHTBLACK_EX}{int(record.timestamp.timestamp())}{Fore.RESET}"
+            command = f"{Fore.GREEN}{record.command}{Fore.RESET}"
+            subcommands = f"{Fore.LIGHTGREEN_EX}{' '.join(record.subcommands).strip()}{Fore.RESET}"
+            print(timestamp, command, subcommands)
+
+        if len(history_manager.history) > limit:
+            print(f"\n{Fore.WHITE}And {len(history_manager) - limit} more...")
+
+    def do__cache(self, line):
+        """Allows you to inspect the cache of certain commands."""
+        print("WIP!")
+
+    def complete__cache(self, text, line, begidx, endidx):
+        commands = []
+        return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
