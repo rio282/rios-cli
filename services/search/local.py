@@ -1,26 +1,21 @@
 import os
-import fnmatch
-
-from typing import List
-from fuzzywuzzy import fuzz
+import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Final, Dict
 
+from fuzzywuzzy import fuzz
 
-class LocalSearchResult:
-    def __init__(self, title: str, location: str, ranking: int = -1):
-        self.title = title
-        self.location = location
-        self.ranking = ranking
-
-    def __repr__(self):
-        return f"{self.title} - {self.location}"
+from . import SearchResult
 
 
 class LocalSearcher:
-    def __init__(self, search_threshold: int = 50):
-        self.search_threshold = search_threshold
+    def __init__(self, cache_dir: str, search_threshold: int = 50):
+        self.cache_dir: Final[str] = cache_dir
+        self.cache_file: Final[str] = f"{cache_dir}/slocal.cache"
+        self.search_threshold: int = search_threshold
+        self.results_cache: Dict[str, List[SearchResult]] = {}
 
-    def search(self, directories: List[str], fn_query: str, file_types: str = "") -> List[LocalSearchResult]:
+    def search(self, directories: List[str], fn_query: str, file_types: str = "") -> List[SearchResult]:
         matches = []
 
         with ThreadPoolExecutor() as executor:
@@ -33,12 +28,33 @@ class LocalSearcher:
 
         return matches
 
-    def __search_directory(self, directory: str, query: str, file_types: str) -> List[LocalSearchResult]:
+    def __search_directory(self, directory: str, query: str, file_types: str) -> List[SearchResult]:
         matches = []
         for root, _, filenames in os.walk(directory):
             for filename in filenames:
                 if filename.endswith(tuple(ft for ft in file_types)) or file_types[0] == "":
                     if fuzz.token_sort_ratio(query.lower(), filename.lower()) > self.search_threshold or query == "":
-                        match = LocalSearchResult(filename, os.path.join(root, filename))
+                        match = SearchResult(filename, os.path.join(root, filename))
                         matches.append(match)
         return matches
+
+    def save_cache(self) -> None:
+        # TODO: move to Searcher class in init file
+        """
+        Saves the cache to a file.
+        """
+        try:
+            with open(file=self.cache_file, mode="wb") as f:
+                pickle.dump({"results_cache": self.results_cache}, f)
+        except Exception as e:
+            print("Couldn't save cache.")
+            print(e)
+
+    def load_cache(self) -> None:
+        """
+        Loads the cache from a file.
+        """
+        if os.path.exists(self.cache_file):
+            with open(file=self.cache_file, mode="rb") as f:
+                cache_data = pickle.load(f)
+                self.results_cache = cache_data.get("results_cache", {})

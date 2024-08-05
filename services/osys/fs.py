@@ -6,7 +6,7 @@ from typing import List, Tuple, Dict, Optional
 
 class FileSystem:
     def __init__(self, cache_dir: str):
-        self.cache_file = f"{cache_dir}/ls.cache"
+        self.cache_file = f"{cache_dir}/fs.cache"
         self.file_cache: Dict[str, List[Tuple[str, float]]] = {}
         self.directory_cache: Dict[str, List[str]] = {}
 

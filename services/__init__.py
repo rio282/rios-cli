@@ -15,7 +15,7 @@ file_system = FileSystem(cache_directory)
 processes = ProcessManager()
 statistics = StatisticsService()
 com = COMService()
-local_searcher = LocalSearcher()
+local_searcher = LocalSearcher(cache_dir=cache_directory)
 web_searcher = DuckDuckGo(query_url=f"https://duckduckgo.com/html/?q={WebSearcher.QUERY_PLACEHOLDER}",
                           cache_dir=cache_directory)
 history_manager = HistoryManager(cache_directory)

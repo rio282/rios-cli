@@ -1,35 +1,28 @@
 import os
 import pickle
 from abc import abstractmethod, ABC
-from typing import List, Final, Optional, Dict
+from typing import List, Final, Dict
 
 import requests
 from bs4 import BeautifulSoup
 
-
-class WebSearchResult:
-    def __init__(self, title: str, href: str, ranking: int = -1):
-        self.title = title
-        self.href = href
-        self.ranking = ranking
-
-    def __repr__(self):
-        return f"{self.title} - {self.href}"
+from . import SearchResult
 
 
 class WebSearcher(ABC):
     QUERY_PLACEHOLDER: Final[str] = "<SEARCH_QUERY>"
 
     def __init__(self, query_url: str, cache_dir: str):
-        self.cache_file: Final[str] = f"{cache_dir}/web.cache"
-        self.results_cache: Dict[str, List[WebSearchResult]] = {}
+        self.cache_file: Final[str] = f"{cache_dir}/sweb.cache"
+        self.results_cache: Dict[str, List[SearchResult]] = {}
+
         self.headers: Final[Dict[str, str]] = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
         self.query_url: Final[str] = query_url
 
     @abstractmethod
-    def search(self, query: str) -> List[WebSearchResult]:
+    def search(self, query: str) -> List[SearchResult]:
         pass
 
     def querify(self, search_query: str) -> str:
@@ -49,6 +42,7 @@ class WebSearcher(ABC):
             print(e)
 
     def load_cache(self) -> None:
+        # TODO: move to Searcher class in init file
         """
         Loads the cache from a file.
         """
@@ -62,7 +56,7 @@ class DuckDuckGo(WebSearcher, ABC):
     def __init__(self, query_url: str, cache_dir: str):
         super().__init__(query_url, cache_dir)
 
-    def search(self, query: str) -> List[WebSearchResult]:
+    def search(self, query: str) -> List[SearchResult]:
         if query in self.results_cache:
             return self.results_cache[query]
 
@@ -79,7 +73,7 @@ class DuckDuckGo(WebSearcher, ABC):
         for index, result in enumerate(web_results, start=1):
             title = result.get_text()
             href = result.get("href")
-            search_result = WebSearchResult(title, href, ranking=index)
+            search_result = SearchResult(title, href, ranking=index)
             search_results.append(search_result)
 
         self.results_cache[query] = search_results

@@ -118,11 +118,13 @@ class RiosCLI(cmd.Cmd):
     def preloop(self):
         file_system.load_cache()
         web_searcher.load_cache()
+        local_searcher.load_cache()
         history_manager.load()
 
     def postloop(self):
         file_system.save_cache()
         web_searcher.save_cache()
+        local_searcher.save_cache()
         history_manager.save()
 
     def emptyline(self):
