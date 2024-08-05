@@ -33,6 +33,7 @@ def show_error_popup(error: Exception or str) -> None:
     window = tk.Tk()
     window.title("Error Information")
     window.geometry("500x300")
+    window.resizable = False
 
     # error details
     label = tk.Label(window, text="A fatal error occurred:", font=("Arial", 14))

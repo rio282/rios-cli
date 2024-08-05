@@ -276,8 +276,6 @@ class RiosCLI(cmd.Cmd):
     def do_copy(self, line):
         """Copies a file or directory (and its contents)."""
         line = line.split()
-        # TODO: commands should always look for flags (starting with '--')
-
         if len(line) > 2:
             print(f"{Fore.RED}More than two arguments were found, they were ignored.")
 
@@ -733,7 +731,7 @@ class RiosCLI(cmd.Cmd):
             print(timestamp, command, subcommands)
 
         if len(history_manager.history) > limit:
-            print(f"\n{Fore.WHITE}And {len(history_manager) - limit} more...")
+            print(f"\n{Fore.WHITE}And {len(history_manager.history) - limit} more...")
 
     def do__cache(self, line):
         """Allows you to inspect the cache of certain commands."""
