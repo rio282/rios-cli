@@ -14,7 +14,7 @@ from psutil._common import bytes2human
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
-    history_manager
+    history_manager, cache_directory
 from services.cursive import ListMenu, SliderMenu, TextPane
 from services.cursive.editors import InputMenu
 from services.cursive.music import MusicVisualizer
@@ -111,8 +111,8 @@ class RiosCLI(cmd.Cmd):
     def postcmd(self, stop, line):
         if line.strip() != "":
             print()  # add empty line for better readability
+            history_manager.record_line(line)
 
-        history_manager.record_line(line)
         return stop
 
     def preloop(self):
@@ -198,7 +198,7 @@ class RiosCLI(cmd.Cmd):
 
             if os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip":
                 # zip files
-                zip_content = file_system.view_zip_content(directory)
+                zip_content = file_system.get_zip_content(directory)
                 if print_dirs:
                     self.list_directories(zip_content.get("directories"))
                 if print_files:
@@ -717,6 +717,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         print(f"{Fore.LIGHTBLACK_EX}Running postloop...")
+        history_manager.record_line(f"reload {line}")
         self.postloop()
 
         print(f"{Fore.WHITE}Reloading...")
@@ -725,10 +726,23 @@ class RiosCLI(cmd.Cmd):
 
     def do__history(self, line):
         """Allows you to inspect the command history."""
+        line = line.strip()
+        if line.lower() == "reset":
+            confirmation = ListMenu.spawn(["Yes", "No"])
+            if confirmation and confirmation.lower() == "yes":
+                history_manager.history = []
+                print(f"{Fore.GREEN}Reset command history.")
+            return
+        elif line:
+            self.default(line)
+            return
+
         limit = 100
+        valid_commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
         for record in history_manager.history[:min(limit, len(history_manager.history))]:
             timestamp = f"{Fore.LIGHTBLACK_EX}{int(record.timestamp.timestamp())}{Fore.RESET}"
-            command = f"{Fore.GREEN}{record.command}{Fore.RESET}"
+            command_color = Fore.GREEN if record.command in valid_commands else Fore.RED
+            command = f"{command_color}{record.command}{Fore.RESET}"
             subcommands = f"{Fore.LIGHTGREEN_EX}{' '.join(record.subcommands).strip()}{Fore.RESET}"
             print(timestamp, command, subcommands)
 
@@ -737,8 +751,24 @@ class RiosCLI(cmd.Cmd):
 
     def do__cache(self, line):
         """Allows you to inspect the cache of certain commands."""
-        print("WIP!")
+        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+
+        # get valid command files
+        command_files = []
+        for file in os.listdir(cache_directory):
+            filename = os.path.splitext(file)[0]
+            if filename in commands:
+                command_files.append(file)
+
+        # pick a command file
+        command_file = ListMenu.spawn(command_files)
+        if not command_file:
+            return
+
+        # display its content
+        content = file_system.get_file_content_binary(os.path.join(cache_directory, command_file))
+        pprint(content)
 
     def complete__cache(self, text, line, begidx, endidx):
-        commands = []
+        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
         return AutoCompletion.matches_of(commands, text, line, begidx, endidx)

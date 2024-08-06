@@ -7,15 +7,18 @@ from .record import Record
 
 
 class HistoryManager:
-    def __init__(self, cache_dir):
+    def __init__(self, cache_dir: str):
         self.cache_dir: Final[str] = cache_dir
         self.cache_file: Final[str] = f"{cache_dir}/cmd.history"
         self.history: List[Record] = []
 
-    def record_line(self, line) -> None:
-        line = line.split()
-        command = line[0]
-        subcommands = line[1:] if len(line) > 1 else []
+    def record_line(self, line: str) -> None:
+        if not line.strip():  # empty line
+            return
+
+        parts = line.split()
+        command = parts[0]
+        subcommands = parts[1:]
 
         self.history.append(Record(dt.now(), command, subcommands))
 

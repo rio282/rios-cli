@@ -1,12 +1,12 @@
 import os
 import pickle
 import zipfile
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Any
 
 
 class FileSystem:
     def __init__(self, cache_dir: str):
-        self.cache_file = f"{cache_dir}/fs.cache"
+        self.cache_file = f"{cache_dir}/ls.cache"
         self.file_cache: Dict[str, List[Tuple[str, float]]] = {}
         self.directory_cache: Dict[str, List[str]] = {}
 
@@ -143,7 +143,7 @@ class FileSystem:
         except zipfile.BadZipFile as e:
             raise e
 
-    def view_zip_content(self, zipped_file: str) -> Dict[str, List[Tuple[str, float]]]:
+    def get_zip_content(self, zipped_file: str) -> Dict[str, List[Tuple[str, float]]]:
         """
         Returns the content of the zipfile.
         :param zipped_file: The zipfile of which the contents will be viewed of.
@@ -169,6 +169,19 @@ class FileSystem:
                 }
         except Exception as e:
             raise e
+
+    def get_file_content(self, file: str, as_list: bool = True) -> List[str] or str:
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"File '{file}' not found.")
+
+        with open(file, mode="r") as _file:
+            if as_list:
+                return _file.readlines()
+            return _file.read()
+
+    def get_file_content_binary(self, file: str) -> Dict[str, Any]:
+        with open(file=file, mode="rb") as f:
+            return pickle.load(f)
 
     def save_cache(self) -> None:
         """
