@@ -31,7 +31,7 @@ class LocalSearcher(Searcher, metaclass=ABCMeta):
         matches = []
         for root, _, filenames in os.walk(directory):
             for filename in filenames:
-                if filename.endswith(tuple(ft for ft in file_types)) or file_types[0] == "":
+                if filename.endswith(tuple(ft for ft in file_types)) or (file_types and file_types[0] == ""):
                     if fuzz.token_sort_ratio(query.lower(), filename.lower()) > search_threshold or query == "":
                         match = SearchResult(filename, os.path.join(root, filename))
                         matches.append(match)

@@ -562,15 +562,46 @@ class RiosCLI(cmd.Cmd):
         self.config.save_config()
         self.config.reload()
 
-    def do_now(self, line):
+    def do_time(self, line):
         """Shows current date (along with day of week) and time."""
-        current_datetime = datetime.now()
-        formatted_date = current_datetime.strftime("%Y-%m-%d")
-        formatted_time = current_datetime.strftime("%H:%M:%S")
-        formatted_day = current_datetime.strftime("%A")
-        print(
-            f"Today's date is {Fore.GREEN}{formatted_date}{Fore.RESET}, it's a {Fore.GREEN}{formatted_day}{Fore.RESET} and it's currently {Fore.GREEN}{formatted_time}{Fore.RESET}."
-        )
+        line = line.strip()
+        if not line:
+            line = "now"
+
+        parts = line.strip().split()
+        subcommand = parts[0]
+
+        try:
+            if subcommand == "now":
+                current_datetime = datetime.now()
+                formatted_date = current_datetime.strftime("%Y-%m-%d")
+                formatted_time = current_datetime.strftime("%H:%M:%S")
+                formatted_day = current_datetime.strftime("%A")
+                print(
+                    f"Today's date is {Fore.GREEN}{formatted_date}{Fore.RESET}, it's a {Fore.GREEN}{formatted_day}{Fore.RESET} and it's currently {Fore.GREEN}{formatted_time}{Fore.RESET}."
+                )
+            elif subcommand == "wunix":
+                if len(parts) < 2:
+                    self.default(line)
+                    return
+
+                unix_time = int(parts[1])
+                dt = datetime.fromtimestamp(unix_time)
+                formatted_date = dt.strftime("%Y-%m-%d")
+                formatted_time = dt.strftime("%H:%M:%S")
+                formatted_day = dt.strftime("%A")
+
+                print(
+                    f"Unix timestamp {Fore.GREEN}{unix_time}{Fore.RESET} corresponds to {Fore.GREEN}{formatted_date}{Fore.RESET}, {Fore.GREEN}{formatted_day}{Fore.RESET} at {Fore.GREEN}{formatted_time}{Fore.RESET}."
+                )
+            else:
+                self.default(line)
+        except Exception as e:
+            self.__on_error(e)
+
+    def complete_time(self, text, line, begidx, endidx):
+        commands = ["now", "wunix"]
+        return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
 
     def do_volume(self, line):
         """Adjusts volume for windows."""
@@ -681,9 +712,15 @@ class RiosCLI(cmd.Cmd):
             print(f"{Fore.LIGHTBLACK_EX}Searching the web for: '{query}'...")
             results = web_searcher.search(query)
         elif search_type == "locally":
+            home_dir = os.path.expanduser("~/Desktop")
+            root = InputMenu.spawn("Path: ",
+                                   title=f"Choose a starting directory to perform the search in (Default={home_dir})")
+            if not root:
+                root = home_dir
+
             print(f"{Fore.LIGHTBLACK_EX}Searching locally for: '{query}'...")
             local_searcher.search_threshold = self.config.config.getint(section="DEFAULT", option="search_threshold")
-            results = local_searcher.search(query)
+            results = local_searcher.search(directories=[root], fn_query=query)
         else:
             self.default(query)
             return
@@ -737,9 +774,9 @@ class RiosCLI(cmd.Cmd):
             self.default(line)
             return
 
-        limit = 100
+        limit = 25
         valid_commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
-        for record in history_manager.history[:min(limit, len(history_manager.history))]:
+        for record in history_manager.history[::-1][:min(limit, len(history_manager.history))]:
             timestamp = f"{Fore.LIGHTBLACK_EX}{int(record.timestamp.timestamp())}{Fore.RESET}"
             command_color = Fore.GREEN if record.command in valid_commands else Fore.RED
             command = f"{command_color}{record.command}{Fore.RESET}"
@@ -751,6 +788,12 @@ class RiosCLI(cmd.Cmd):
 
     def do__cache(self, line):
         """Allows you to inspect the cache of certain commands."""
+        if line.strip() == "--force-postloop-now":
+            print(f"{Fore.LIGHTGREEN_EX}Forcing postloop routine...")
+            self.postloop()
+            print(f"{Fore.GREEN}Complete!")
+            return
+
         commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
 
         # get valid command files
@@ -785,4 +828,5 @@ class RiosCLI(cmd.Cmd):
 
     def complete__cache(self, text, line, begidx, endidx):
         commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+        commands.append("--force-postloop-now")
         return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
