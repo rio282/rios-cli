@@ -1,4 +1,5 @@
 import cmd
+import json
 import os
 import shutil
 import sys
@@ -21,6 +22,7 @@ from services.cursive.music import MusicVisualizer
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
+from services.search import SearchResultEncoder
 
 intro_logo: Final[str] = Fore.GREEN + r"""
                                                       ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
@@ -731,9 +733,9 @@ class RiosCLI(cmd.Cmd):
             return
 
         if search_type == "web":
-            webbrowser.open(selected_result.href, new=0, autoraise=True)
+            webbrowser.open(selected_result.location, new=0, autoraise=True)
         else:
-            self.do_open(selected_result.href)
+            self.do_open(selected_result.location)
 
     def do_clear(self, line):
         """Clears screen."""
@@ -824,7 +826,8 @@ class RiosCLI(cmd.Cmd):
 
         # display chosen command's cache
         content = file_system.get_file_content_binary(os.path.join(cache_directory, command_file))
-        pprint(content)
+        stringified_content = json.dumps(content, indent=2, sort_keys=True, cls=SearchResultEncoder)
+        TextPane.display(stringified_content, command_file.upper())
 
     def complete__cache(self, text, line, begidx, endidx):
         commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]

@@ -1,3 +1,5 @@
+import json
+
 import xxhash
 import os
 import pickle
@@ -55,3 +57,14 @@ class SearchResult:
 
     def __repr__(self):
         return f"{self.title} - {self.location}"
+
+
+class SearchResultEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, SearchResult):
+            return {
+                "title": obj.title,
+                "location": obj.location,
+                "ranking": obj.ranking
+            }
+        return super().default(obj)
