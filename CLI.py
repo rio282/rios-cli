@@ -827,7 +827,7 @@ class RiosCLI(cmd.Cmd):
         # display chosen command's cache
         content = file_system.get_file_content_binary(os.path.join(cache_directory, command_file))
         stringified_content = json.dumps(content, indent=2, sort_keys=True, cls=SearchResultEncoder)
-        TextPane.display(stringified_content, command_file.upper())
+        TextPane.display(stringified_content, title=command_file.upper(), show_lines_in_title=True)
 
     def complete__cache(self, text, line, begidx, endidx):
         commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
