@@ -116,15 +116,15 @@ class RiosCLI(cmd.Cmd):
         return stop
 
     def preloop(self):
-        file_system.load_cache()
-        web_searcher.load_cache()
-        local_searcher.load_cache()
+        file_system.load()
+        local_searcher.load()
+        web_searcher.load()
         history_manager.load()
 
     def postloop(self):
-        file_system.save_cache()
-        web_searcher.save_cache()
-        local_searcher.save_cache()
+        file_system.save()
+        local_searcher.save()
+        web_searcher.save()
         history_manager.save()
 
     def emptyline(self):
@@ -761,11 +761,25 @@ class RiosCLI(cmd.Cmd):
                 command_files.append(file)
 
         # pick a command file
-        command_file = ListMenu.spawn(command_files)
+        if line:
+            command = line.strip()
+            if command not in commands:
+                self.default(line)
+                return
+
+            command_file = None
+            for file in command_files:
+                if os.path.splitext(file)[0] == command:
+                    command_file = file
+                    break
+        else:
+            command_file = ListMenu.spawn(command_files)
+
+        # no cache available or no option was selected in the menu
         if not command_file:
             return
 
-        # display its content
+        # display chosen command's cache
         content = file_system.get_file_content_binary(os.path.join(cache_directory, command_file))
         pprint(content)
 

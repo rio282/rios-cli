@@ -3,7 +3,7 @@ from typing import Final
 
 from .osys import COMService, ProcessManager, StatisticsService
 from .osys.fs import FileSystem
-from .search.web import DuckDuckGo, WebSearcher
+from .search.web import DuckDuckGoSearcher, WebSearcher
 from .search.local import LocalSearcher
 from .internal.history import HistoryManager
 
@@ -16,6 +16,6 @@ processes = ProcessManager()
 statistics = StatisticsService()
 com = COMService()
 local_searcher = LocalSearcher(cache_dir=cache_directory)
-web_searcher = DuckDuckGo(query_url=f"https://duckduckgo.com/html/?q={WebSearcher.QUERY_PLACEHOLDER}",
-                          cache_dir=cache_directory)
+web_searcher = DuckDuckGoSearcher(cache_dir=cache_directory,
+                                  query_url=f"https://duckduckgo.com/html/?q={WebSearcher.QUERY_PLACEHOLDER}")
 history_manager = HistoryManager(cache_directory)

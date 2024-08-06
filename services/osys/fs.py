@@ -183,7 +183,7 @@ class FileSystem:
         with open(file=file, mode="rb") as f:
             return pickle.load(f)
 
-    def save_cache(self) -> None:
+    def save(self) -> None:
         """
         Saves the cache to a file.
         """
@@ -194,7 +194,7 @@ class FileSystem:
             print("Couldn't save cache.")
             print(e)
 
-    def load_cache(self) -> None:
+    def load(self) -> None:
         """
         Loads the cache from a file.
         """

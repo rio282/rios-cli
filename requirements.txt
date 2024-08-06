@@ -29,3 +29,4 @@ watchdog>=4.0.1
 fuzzywuzzy>=0.18.0
 python-Levenshtein>=0.25.1
 numpy>=2.0.1
+xxhash>=3.4.1
