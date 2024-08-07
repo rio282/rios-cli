@@ -157,6 +157,7 @@ class TextPane:
             text_lines = content.splitlines()
             max_line_number = len(text_lines)
             max_line_number_width = len(str(max_line_number))
+            max_width = len(max(text_lines, key=len))
             max_y, max_x = stdscr.getmaxyx()
             current_line = 0
             current_col = 0
@@ -192,7 +193,7 @@ class TextPane:
                 if current_col == 0:
                     percentage_x = 0
                 else:
-                    percentage_x = int(current_col / max(len(text_lines[current_line]) - max_x + 1, 1) * 100)
+                    percentage_x = int(current_col / max(max_width - max_x + 2, 1) * 100)
                 percentage_y = int(current_line / max(max_line_number - max_y + 1, 1) * 100)
 
                 scroll_speed_str = f"Scroll Speed: {scroll_speeds[scroll_speed_index]}"

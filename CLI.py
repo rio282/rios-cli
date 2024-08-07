@@ -21,8 +21,8 @@ from games.horse_racing import HorseRace
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
 from services.cursive import ListMenu, SliderMenu, TextPane
-from services.cursive.editors import InputMenu
-from services.cursive.music import MusicVisualizer
+from services.cursive.input import InputMenu
+from services.cursive.visual import MusicVisualizer
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
