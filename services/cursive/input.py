@@ -6,7 +6,7 @@ class ListMenu:
     @staticmethod
     def spawn(with_options: List[str], title: Optional[str] = None, use_indexes: bool = True,
               quittable: bool = True) -> Optional[Any]:
-        def menu(stdscr):
+        def inner(stdscr):
             stdscr.clear()
 
             curses.curs_set(0)  # hide cursor
@@ -101,7 +101,7 @@ class ListMenu:
         if len(with_options) == 0:
             return None
 
-        result = curses.wrapper(menu)
+        result = curses.wrapper(inner)
         return result
 
 
@@ -109,7 +109,7 @@ class SliderMenu:
     @staticmethod
     def spawn(title: str, min_value: int = 0, max_value: int = 100, initial_value: int = 50,
               increment_level: int = 1) -> Optional[int]:
-        def menu(stdscr):
+        def inner(stdscr):
             curses.curs_set(0)  # hide cursor
             stdscr.keypad(True)  # enable keypad mode
             curses.start_color()  # enable color
@@ -140,14 +140,14 @@ class SliderMenu:
                 elif key == ord('\n'):
                     return current_value
 
-        result = curses.wrapper(menu)
+        result = curses.wrapper(inner)
         return result
 
 
 class InputMenu:
     @staticmethod
     def spawn(input_text: str, title: Optional[str] = None) -> Optional[str]:
-        def menu(stdscr):
+        def inner(stdscr):
             curses.curs_set(0)
             stdscr.keypad(True)
             curses.start_color()
@@ -174,5 +174,5 @@ class InputMenu:
                 elif 32 <= key <= 126:
                     user_input += chr(key)
 
-        result = curses.wrapper(menu)
+        result = curses.wrapper(inner)
         return result

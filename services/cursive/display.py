@@ -10,7 +10,7 @@ class TextPane:
         """Displays the given content in a scrollable pane using curses."""
         title = f"{title} ({content.count('\n') + 1} LINES)" if show_lines_in_title else title
 
-        def __display(stdscr: curses.window) -> None:
+        def inner(stdscr: curses.window) -> None:
             text_lines = content.splitlines()
             max_line_number = len(text_lines)
             max_line_number_width = len(str(max_line_number))
@@ -162,7 +162,7 @@ class TextPane:
 
             initialize_screen()
 
-        curses.wrapper(__display)
+        curses.wrapper(inner)
 
 
 class MusicVisualizer:

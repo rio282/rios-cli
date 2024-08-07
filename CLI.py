@@ -13,6 +13,7 @@ from psutil._common import bytes2human
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred
 from games.horse_racing import HorseRace
+from games.slots import Slots
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
 from services.cursive.input import ListMenu, SliderMenu, InputMenu
@@ -714,6 +715,10 @@ class RiosCLI(cmd.Cmd):
 
     def complete_horserace(self, text, line, begidx, endidx):
         return AutoCompletion.matches_of(["--silent"], text, line, begidx, endidx)
+
+    def do_slots(self, line):
+        slots = Slots()
+        slots.play()
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""

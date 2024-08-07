@@ -25,7 +25,7 @@ class HorseRace:
         return len(max(self.horses, key=lambda _horse: len(_horse.name)).name)
 
     def start(self):
-        def race(stdscr):
+        def inner(stdscr):
             screen_height, screen_width = stdscr.getmaxyx()
             if len(self.horses) > screen_height - 1:
                 raise AttributeError(f"Value 'horses' is too large, max for this screen size: {screen_height - 1}")
@@ -61,4 +61,4 @@ class HorseRace:
                 stdscr.refresh()
                 sleep(self.update_delay)
 
-        curses.wrapper(race)
+        curses.wrapper(inner)
