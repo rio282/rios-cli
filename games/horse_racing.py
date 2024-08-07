@@ -55,7 +55,7 @@ class HorseRace:
 
                 # draw finish line
                 for i in range(len(self.horses)):
-                    stdscr.addstr(i, finish_line + len(self.horses[0].name) + 2, "🏁")
+                    stdscr.addstr(i, finish_line + longest_name, "🏁")
 
                 # yahh, it's rewind time...
                 stdscr.refresh()
