@@ -1,11 +1,13 @@
 import cmd
 import json
 import os
+import random
 import shutil
 import sys
 import webbrowser
 from datetime import date, datetime
 from pprint import pprint
+from time import sleep
 from typing import Final, List, Tuple
 
 from colorama import init, Fore
@@ -14,6 +16,7 @@ from psutil._common import bytes2human
 
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer
+from games.horse_racing import HorseRace
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
 from services.cursive import ListMenu, SliderMenu, TextPane
@@ -43,6 +46,7 @@ o888o  o888o          `Y8bood8P'  o888ooooood8 o888o⠀⠀          ⠀⡆⠀⠀
 
 class RiosCLI(cmd.Cmd):
     prompt: str = Fore.WHITE + "~$ "
+    nohelp: str = f"%s? What's that? -- I wonder who forgot to write documentation about this command... {Fore.WHITE}*ahem*{Fore.RESET}"
     intro: Final[str] = f"{intro_logo}\nHello master, what can I do for you?"
 
     def __init__(self):
@@ -173,18 +177,6 @@ class RiosCLI(cmd.Cmd):
         """Lists the files and directories in a directory."""
         try:
             directory = directory.strip()
-
-            # handle subcommands
-            if directory == "--inspect-cache":
-                file_cache = file_system.file_cache
-                dir_cache = file_system.directory_cache
-
-                print(f"{Fore.GREEN}Directory cache:")
-                pprint(dir_cache if dir_cache else "Empty.")
-                print()
-                print(f"{Fore.GREEN}File cache:")
-                pprint(file_cache if file_cache else "Empty.")
-                return
 
             print_dirs = False
             print_files = False
@@ -695,16 +687,23 @@ class RiosCLI(cmd.Cmd):
         else:
             self.default(subcommand)
 
+    def do_horserace(self, line):
+        line = line.strip()
+        if line == "":
+            horses_count = 5
+        elif not is_integer(line):
+            self.default(line)
+            return
+        else:
+            horses_count = int(line)
+
+        race = HorseRace(horses_count)
+        race.start()
+        print(f"\n{Fore.GREEN}{race.winner} came out on top as the best of {horses_count} horses!")
+
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
         query = query.strip()
-        if query.lower() == "--inspect-webcache":
-            pprint(web_searcher.results_cache)
-            return
-        elif query.lower() == "--inspect-localcache":
-            pprint("TODO!")
-            return
-
         search_type = ListMenu.spawn(["Web", "Locally"], "Where do you want to search?")
         if not search_type:
             return

@@ -40,6 +40,9 @@ def is_integer(supposed_string: Any) -> bool:
     :param supposed_string: string that's probably an integer
     :return: If the provided object is an integer
     """
+    if len(supposed_string) == 0:
+        return False
+
     if supposed_string[0] in ('-', '+'):
         return supposed_string[1:].isdigit()
     return supposed_string.isdigit()
