@@ -21,26 +21,43 @@ class HorseRace:
         self.update_delay: Final[float] = update_delay
         self.winner: Optional[Horse] = None
 
+    def __get_longest_name_length(self) -> int:
+        return len(max(self.horses, key=lambda _horse: len(_horse.name)).name)
+
     def start(self):
         def race(stdscr):
-            screen_height, track_length = stdscr.getmaxyx()
-            if len(self.horses) > screen_height:
-                raise AttributeError(f"Value 'horses' is too large, max for this screen size: {screen_height}")
+            screen_height, screen_width = stdscr.getmaxyx()
+            if len(self.horses) > screen_height - 1:
+                raise AttributeError(f"Value 'horses' is too large, max for this screen size: {screen_height - 1}")
 
             curses.curs_set(0)
             stdscr.clear()
 
+            longest_name = self.__get_longest_name_length()
+            finish_line = screen_width - longest_name - 3
             while not self.winner:
                 stdscr.clear()
-                for horse in self.horses:
+
+                # check for a winner
+                for idx, horse in enumerate(self.horses):
                     horse.distance += random.randint(1, 5)
-                    if horse.distance >= track_length:
+                    if horse.distance >= finish_line:
                         self.winner = horse
+                        horse.distance = finish_line
                         break
 
+                # calculate new position
                 for idx, horse in enumerate(self.horses):
-                    stdscr.addstr(idx, 0, f"{horse.name}: {'-' * horse.distance}🐎")
+                    padded_name = horse.name.ljust(longest_name)
+                    track_position = len(padded_name) + 2
+                    stdscr.addstr(idx, 0, padded_name)
+                    stdscr.addstr(idx, track_position, f"{'-' * horse.distance}🐎")
 
+                # draw finish line
+                for i in range(len(self.horses)):
+                    stdscr.addstr(i, finish_line + len(self.horses[0].name) + 2, "🏁")
+
+                # yahh, it's rewind time...
                 stdscr.refresh()
                 sleep(self.update_delay)
 
