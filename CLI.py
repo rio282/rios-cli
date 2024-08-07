@@ -688,6 +688,7 @@ class RiosCLI(cmd.Cmd):
             self.default(subcommand)
 
     def do_horserace(self, line):
+        """Horse races! Parameter can set the amount of horses (default=5)."""
         line = line.strip()
         if line == "":
             horses_count = 5
