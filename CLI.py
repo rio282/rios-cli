@@ -4,6 +4,7 @@ import os
 import random
 import shutil
 import sys
+import threading
 import webbrowser
 from datetime import date, datetime
 from pprint import pprint
@@ -15,7 +16,7 @@ from playsound import playsound
 from psutil._common import bytes2human
 
 from etc.pepes import *
-from etc.utils import truncate_filename, AutoCompletion, is_integer
+from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred
 from games.horse_racing import HorseRace
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
@@ -689,6 +690,11 @@ class RiosCLI(cmd.Cmd):
 
     def do_horserace(self, line):
         """Horse races! Parameter can set the amount of horses (default=5)."""
+        no_sound = False
+        if "--silent" in line:
+            line = line.replace("--silent", "")
+            no_sound = True
+
         line = line.strip()
         if line == "":
             horses_count = 5
@@ -700,12 +706,20 @@ class RiosCLI(cmd.Cmd):
 
         try:
             race = HorseRace(horses_count)
+
+            if not no_sound:
+                horse_sound_wav = os.path.join(self.script_wd, "res", "horse.wav")
+                playsound_deferred(horse_sound_wav)
+
             race.start()
             print(f"\n{Fore.GREEN}{race.winner} came out on top as the best of {horses_count} horses!")
         except AttributeError as e:
             print(f"{Fore.RED}{e}")
         except Exception as yeah_we_messed_up:
             self.__on_error(yeah_we_messed_up)
+
+    def complete_horserace(self, text, line, begidx, endidx):
+        return AutoCompletion.matches_of(["--silent"], text, line, begidx, endidx)
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""

@@ -1,9 +1,11 @@
 import os
 import re
+import threading
 from enum import auto
 from typing import List, Any
 
 from fuzzywuzzy import process, fuzz
+from playsound import playsound
 
 
 def escape_windows_safe_filename(unsafe: str) -> str:
@@ -37,7 +39,7 @@ def truncate_filename(fn: str, fe: str, max_length: int = 32, character: str = "
 def is_integer(supposed_string: Any) -> bool:
     """
     Checks if the provided string is an integer.
-    :param supposed_string: string that's probably an integer
+    :param supposed_string: String that's probably an integer
     :return: If the provided object is an integer
     """
     if len(supposed_string) == 0:
@@ -52,9 +54,18 @@ def collapse_spaces(input_str: str) -> str:
     """
     Collapses excessive spaces into a single space character.
     :param input_str: String with many spaces
-    :return:
+    :return: String with its spaced collapsed into a single space character
     """
     return re.sub(r"\s+", " ", input_str).strip()
+
+
+def playsound_deferred(sound_file: str) -> None:
+    """
+    Plays a sound file asynchronously.
+    :param sound_file: File to be played asynchronously
+    """
+    sound_thread = threading.Thread(target=playsound, args=(sound_file,))
+    sound_thread.start()
 
 
 class FuzzyMatcher:
