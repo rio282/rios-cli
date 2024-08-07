@@ -1,18 +1,13 @@
 import cmd
 import json
 import os
-import random
 import shutil
 import sys
-import threading
 import webbrowser
 from datetime import date, datetime
-from pprint import pprint
-from time import sleep
 from typing import Final, List, Tuple
 
 from colorama import init, Fore
-from playsound import playsound
 from psutil._common import bytes2human
 
 from etc.pepes import *
@@ -20,9 +15,8 @@ from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_d
 from games.horse_racing import HorseRace
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
-from services.cursive import ListMenu, SliderMenu, TextPane
-from services.cursive.input import InputMenu
-from services.cursive.visual import MusicVisualizer
+from services.cursive.input import ListMenu, SliderMenu, InputMenu
+from services.cursive.display import TextPane, MusicVisualizer
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService

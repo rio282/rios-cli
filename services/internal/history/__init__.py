@@ -1,9 +1,17 @@
 import os
 import pickle
-from datetime import datetime as dt
+from datetime import datetime
 from typing import List, Final
 
-from .record import Record
+
+class Record:
+    def __init__(self, timestamp: datetime, command: str, subcommands: List[str]):
+        self.timestamp: Final[datetime] = timestamp
+        self.command: Final[str] = command
+        self.subcommands: Final[List[str]] = subcommands
+
+    def __repr__(self):
+        return f"{int(self.timestamp.timestamp())} -> {self.command}, <{' '.join(self.subcommands)}>"
 
 
 class HistoryManager:
@@ -20,7 +28,7 @@ class HistoryManager:
         command = parts[0]
         subcommands = parts[1:]
 
-        self.history.append(Record(dt.now(), command, subcommands))
+        self.history.append(Record(datetime.now(), command, subcommands))
 
     def save(self) -> bool:
         try:
