@@ -7,8 +7,10 @@ import webbrowser
 from datetime import date, datetime
 from typing import Final, List, Tuple
 
+import psutil
 from colorama import init, Fore
 from psutil._common import bytes2human
+from tabulate import tabulate
 
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred
@@ -21,6 +23,7 @@ from services.cursive.display import TextPane, MusicVisualizer
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
+from services.osys.fs import File
 from services.search import SearchResultEncoder
 
 intro_logo: Final[str] = Fore.GREEN + r"""
@@ -84,29 +87,36 @@ class RiosCLI(cmd.Cmd):
     def __on_error(self, error_exception: Exception):
         print(f"{Fore.RED}[!] An error has occurred: {error_exception}")
 
-    def list_files(self, files: List[Tuple[str, float]]):
+    def list_files(self, files: List[File]):
         print()
-        print(f"{Fore.GREEN}Files:")
-        formatted_file_info = []
-        max_length = 32
+        print(f"{Fore.GREEN}Files ({len(files)}):")
+
+        table_data = []
+        max_length = 48
+
         for file in files:
-            file, file_size = file
-            filename, file_ext = os.path.splitext(file)
+            base_name, file_ext = os.path.splitext(file.name)
 
-            padding_length = max_length - len(filename) - len(file_ext)
-            file_size_mb_rounded = float(f"{file_size:.2f}")
+            truncated_name = truncate_filename(base_name, file_ext, max_length)
+            filename_display = f"{Fore.LIGHTBLACK_EX}{truncated_name}{Fore.RESET}" \
+                if file.name.startswith(".") else truncated_name
+            file_size_mb_rounded = float(f"{file.size_mb:.2f}")
+            file_size_display = f"{Fore.CYAN}{file_size_mb_rounded} MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded} MB"
+            file_type = file_system.get_file_type(file_ext)
+            last_updated = datetime.fromtimestamp(file.last_updated).strftime("%Y-%m-%d %H:%M:%S").split()
+            last_updated = f"{last_updated[0]} {Fore.LIGHTBLACK_EX}{last_updated[1]}{Fore.RESET}"
 
-            f_filename = truncate_filename(filename, file_ext, max_length)
-            f_file_size = f"{Fore.CYAN}{file_size_mb_rounded} MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded} MB"
-            filename_padding = f"{Fore.LIGHTBLACK_EX}{'-' * padding_length}{Fore.RESET}"
+            table_data.append([filename_display, file_size_display, file_type, last_updated])
 
-            formatted_file_info.append(f"{f_filename}{filename_padding} | {f_file_size}")
-
-        print(*formatted_file_info, sep="\n")
+        print(tabulate(
+            table_data,
+            headers=[f"{Fore.WHITE}Filename", "Size", "Type", f"Updated{Fore.RESET}"],
+            colalign=("left", "right", "left")
+        ))
 
     def list_directories(self, directories: List[str]):
         print()
-        print(f"{Fore.GREEN}Directories:")
+        print(f"{Fore.GREEN}Directories ({len(directories)}):")
         print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
                 directories], sep="\n")
 
@@ -440,7 +450,7 @@ class RiosCLI(cmd.Cmd):
             # choose episode
             anime_dir = os.path.join(animes_dir, anime_name)
             episodes = file_system.get_files_in_directory(anime_dir)
-            episodes = sorted([ep[0].removesuffix(".mp4") for ep in episodes if ep[0].endswith(".mp4")], key=int)
+            episodes = sorted([ep.name.removesuffix(".mp4") for ep in episodes if ep.name.endswith(".mp4")], key=int)
 
             episode = ListMenu.spawn(episodes, title="Choose an episode:")
             if not episode:
@@ -661,6 +671,33 @@ class RiosCLI(cmd.Cmd):
             Fore.WHITE +
             f"{'Free:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_free.ljust(align_length)} {disk_free.ljust(align_length)}"
         )
+
+    def do_netstat(self, line):
+        connections = psutil.net_connections(kind="inet")
+        rows = []
+        for conn in connections:
+            if conn.status == "ESTABLISHED":
+                laddr = f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "-"
+                raddr = f"{conn.raddr.ip}:{conn.raddr.port}" if conn.raddr else "-"
+                pid = conn.pid
+
+                try:
+                    process = psutil.Process(pid)
+                    pname = process.name()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pname = "-"
+
+                rows.append((
+                    f"{Fore.GREEN}{raddr.split(':')[0]}{Fore.RESET}",
+                    f"{laddr.split(':').pop().ljust(5)} {Fore.LIGHTBLACK_EX}<->{Fore.RESET} {raddr.split(':').pop().rjust(5)}",
+                    f"{Fore.LIGHTCYAN_EX}{pid}{Fore.RESET}",
+                    f"{Fore.CYAN}{pname}{Fore.RESET}"
+                ))
+
+        headers = [f"{Fore.WHITE}Connection To", f"{Fore.WHITE}Port Flow (L-E)", f"{Fore.WHITE}PID",
+                   f"{Fore.WHITE}Name"]
+        print()
+        print(tabulate(rows, headers=headers))
 
     def do_com(self, line):
         """Allows interaction with COM port(s)."""

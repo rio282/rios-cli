@@ -34,7 +34,7 @@ class MusicPlayer:
             return
 
         for song_file in playlist_files:
-            song_name = song_file[0]
+            song_name = song_file.name
             if song_name.endswith(".mp3"):
                 location = os.path.join(playlist_folder, song_name)
                 name = song_name.split(".")

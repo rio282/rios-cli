@@ -2,12 +2,25 @@ import os
 import pickle
 import zipfile
 from typing import List, Tuple, Dict, Optional, Any
+import win32api
+from win32con import HKEY_CLASSES_ROOT
+
+
+class File:
+    def __init__(self, name: str, location: str, size_mb: float, last_updated: float):
+        self.name = name
+        self.location = location
+        self.size_mb = size_mb
+        self.last_updated = last_updated
+
+    def __repr__(self):
+        return f"{os.path.join(self.location, self.name)} | ~{self.size_mb:.2f}MB | {self.last_updated}"
 
 
 class FileSystem:
     def __init__(self, cache_dir: str):
         self.cache_file = f"{cache_dir}/ls.cache"
-        self.file_cache: Dict[str, List[Tuple[str, float]]] = {}
+        self.file_cache: Dict[str, List[File]] = {}
         self.directory_cache: Dict[str, List[str]] = {}
 
     @staticmethod
@@ -44,14 +57,33 @@ class FileSystem:
             return os.path.realpath(os.path.join(os.path.expanduser("~"), directory.removeprefix("~\\")))
         return os.path.realpath(os.path.join(os.getcwd(), directory))
 
-    def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[Tuple[str, float]]:
+    @staticmethod
+    def get_file_type(extension: str) -> str:
+        """
+        Gets the name/mimetype of the file extension supplied.
+
+        :param extension: A file extension
+        :return: The name the extension corresponds with in the system
+        """
+        try:
+            key = win32api.RegOpenKey(HKEY_CLASSES_ROOT, extension)
+            file_type_class, _ = win32api.RegQueryValueEx(key, "")
+
+            key = win32api.RegOpenKey(HKEY_CLASSES_ROOT, file_type_class)
+            file_type_description, _ = win32api.RegQueryValueEx(key, "")
+
+            return file_type_description
+        except:
+            return extension.removeprefix(".")
+
+    def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[File]:
         """
         Gets the files within a directory along with their respective file size in Megabytes.
         If anything fails an error will be thrown with a corresponding error message.
 
         :param directory: The directory of which the files are requested.
         :param use_cache: Makes call use the cache (if available) instead of checking again.
-        :return: Returns a list of tuples that contain: [filename, file_size] in this order.
+        :return: Returns a list of files (class File).
         """
         directory = self.clean_directory(directory)
 
@@ -69,8 +101,10 @@ class FileSystem:
         files = []
         for entry in os.listdir(directory):
             if os.path.isfile(os.path.join(directory, entry)):
-                file_size = os.stat(os.path.join(directory, entry)).st_size / (1024 * 1024)
-                files.append((entry, file_size))
+                full_path = os.path.join(directory, entry)
+                file_size = os.stat(full_path).st_size / (1024 * 1024)
+                last_updated = os.path.getmtime(full_path)
+                files.append(File(name=entry, location=directory, size_mb=file_size, last_updated=last_updated))
 
         # save to cache before returning
         self.file_cache[directory] = files
