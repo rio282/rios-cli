@@ -23,11 +23,13 @@ class HorseRace:
 
     def start(self):
         def race(stdscr):
-            _, max_x = stdscr.getmaxyx()
+            screen_height, track_length = stdscr.getmaxyx()
+            if len(self.horses) > screen_height:
+                raise AttributeError(f"Value 'horses' is too large, max for this screen size: {screen_height}")
+
             curses.curs_set(0)
             stdscr.clear()
 
-            track_length = max_x
             while not self.winner:
                 stdscr.clear()
                 for horse in self.horses:

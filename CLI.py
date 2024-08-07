@@ -697,9 +697,12 @@ class RiosCLI(cmd.Cmd):
         else:
             horses_count = int(line)
 
-        race = HorseRace(horses_count)
-        race.start()
-        print(f"\n{Fore.GREEN}{race.winner} came out on top as the best of {horses_count} horses!")
+        try:
+            race = HorseRace(horses_count)
+            race.start()
+            print(f"\n{Fore.GREEN}{race.winner} came out on top as the best of {horses_count} horses!")
+        except AttributeError as e:
+            self.__on_error(e)
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
