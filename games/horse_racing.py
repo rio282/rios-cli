@@ -40,7 +40,7 @@ class HorseRace:
 
                 # check for a winner
                 for idx, horse in enumerate(self.horses):
-                    horse.distance += random.randint(1, 5)
+                    horse.distance += random.randint(0, 5)
                     if horse.distance >= finish_line:
                         self.winner = horse
                         horse.distance = finish_line
