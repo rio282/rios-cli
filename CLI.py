@@ -769,7 +769,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         print(f"{Fore.LIGHTBLACK_EX}Running postloop...")
-        history_manager.record_line(f"reload {line}")
+        history_manager.record_line(f"reload {line}")  # doesn't get saved otherwise
         self.postloop()
 
         print(f"{Fore.WHITE}Reloading...")

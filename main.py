@@ -1,18 +1,16 @@
-import os
-import shutil
-import subprocess
-import sys
 import argparse
+import os
+import sys
 import threading
-
-import pretty_errors
+import tkinter as tk
+import webbrowser
+from tkinter import scrolledtext
 from typing import Final
 
-import tkinter as tk
-from tkinter import scrolledtext
-import webbrowser
+import pretty_errors
 
 from CLI import RiosCLI
+from etc.ffm import check_for_ffmpeg, install_ffmpeg
 from services.internal.reloader import HotReloader
 
 PRETTY_ERRORS: Final[bool] = True
@@ -33,7 +31,7 @@ def show_error_popup(error: Exception or str) -> None:
     window = tk.Tk()
     window.title("Error Information")
     window.geometry("500x300")
-    window.resizable = False
+    window.resizable(False, False)
 
     # error details
     label = tk.Label(window, text="A fatal error occurred:", font=("Arial", 14))
@@ -62,36 +60,6 @@ def show_error_popup(error: Exception or str) -> None:
 
     window.eval("tk::PlaceWindow . center")
     window.mainloop()
-
-
-def install_ffmpeg():
-    # TODO: throw in FFMPEG helper
-    try:
-        if sys.platform == "win32":
-            subprocess.check_call(["choco", "install", "ffmpeg", "-y"])
-        else:
-            raise EnvironmentError("Unsupported platform. Please install ffmpeg and ffprobe manually.")
-        print("ffmpeg and ffprobe installed successfully.")
-    except Exception as ex:
-        raise EnvironmentError(f"Failed to install ffmpeg and ffprobe: {ex}")
-
-
-def check_for_ffmpeg():
-    # TODO: throw in FFMPEG helper
-    ffmpeg_path = shutil.which("ffmpeg")
-    ffprobe_path = shutil.which("ffprobe")
-
-    if ffmpeg_path and ffprobe_path:
-        print(f"ffmpeg found at {ffmpeg_path}")
-        print(f"ffprobe found at {ffprobe_path}")
-    else:
-        missing = []
-        if not ffmpeg_path:
-            missing.append("ffmpeg")
-        if not ffprobe_path:
-            missing.append("ffprobe")
-        raise EnvironmentError(
-            f"Missing dependencies: {', '.join(missing)}. Please install them and ensure they are in your PATH.")
 
 
 def is_correct_python_version() -> bool:
