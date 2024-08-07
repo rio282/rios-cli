@@ -354,9 +354,9 @@ class RiosCLI(cmd.Cmd):
 
     def do_fart(self, line):
         """Plays fart sound."""
-        print(f"{cool_pepe}\nThppt! *Shits pants*")
         fart_sound_wav = os.path.join(self.script_wd, "res", "fart.wav")
         playsound_deferred(fart_sound_wav)
+        print(f"{cool_pepe}\nThppt! *Shits pants*")
 
     def do_youtube(self, video_url):
         """Parses YouTube command(s)."""
