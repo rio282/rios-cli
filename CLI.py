@@ -235,6 +235,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_mk(self, filename):
         """Create a new file in the current directory."""
+        filename = filename.strip()
         file_path = os.path.join(self.current_directory, filename)
         try:
             if os.path.exists(file_path):
@@ -307,7 +308,7 @@ class RiosCLI(cmd.Cmd):
         except FileExistsError as e:
             print(f"{Fore.RED}File already exists in this directory.")
         except (FileNotFoundError, NotADirectoryError) as e:
-            print(f"{Fore.RED}{e}")
+            print(f"{Fore.RED}Not found. {e}")
         except Exception as e:
             self.__on_error(e)
 
@@ -461,7 +462,8 @@ class RiosCLI(cmd.Cmd):
             self.do_open(episode_file)
 
     def complete_anime(self, text, line, begidx, endidx):
-        return ["--verbose"]
+        subcommands = ["--verbose"]
+        return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
 
     def do_music(self, subcommand):
         """Opens music player. Currently only playlist support."""

@@ -9,6 +9,7 @@ class Search:
         self.provider = provider
 
     def search_anime_by_name(self, anime_name: str) -> List[Anime]:
+        # TODO: make use of cache
         anime = []
 
         results = self.provider.get_search(anime_name)
