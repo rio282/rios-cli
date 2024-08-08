@@ -707,7 +707,7 @@ class RiosCLI(cmd.Cmd):
                 ))
 
         headers = [f"{Fore.WHITE}Connection To", "Port Flow (L-E)", "PID", f"Name{Fore.RESET}"]
-        print()
+        print(f"\n{Fore.GREEN}*** Open connection(s):\n")
         print(tabulate(rows, headers=headers))
 
     def do_com(self, line):
