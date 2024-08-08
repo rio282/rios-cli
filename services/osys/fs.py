@@ -1,33 +1,24 @@
 import json
+import mmap
 import os
 import pickle
 import zipfile
 from typing import List, Tuple, Dict, Optional, Any
 import win32api
+import xxhash
 from win32con import HKEY_CLASSES_ROOT
 
 
 class File:
-    def __init__(self, name: str, location: str, size_mb: float, last_updated: float):
+    def __init__(self, name: str, location: str, size_mb: float, last_updated: float, file_hash: Optional[str] = None):
         self.name = name
         self.location = location
         self.size_mb = size_mb
         self.last_updated = last_updated
+        self.file_hash = file_hash
 
     def __repr__(self):
         return f"{os.path.join(self.location, self.name)} | ~{self.size_mb:.2f}MB | {self.last_updated}"
-
-
-class FileEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, File):
-            return {
-                "name": obj.name,
-                "location": obj.location,
-                "size_mb": obj.size_mb,
-                "last_updated": obj.last_updated
-            }
-        return super().default(obj)
 
 
 class FileSystem:
@@ -54,6 +45,7 @@ class FileSystem:
         directory = (directory
                      .replace("/", "\\")
                      .replace("--use-cache", "")
+                     .replace("--show-hash", "")
                      .replace("--inspect-cache", "")
                      .replace("--dirs", "")
                      .replace("--files", "")
@@ -89,13 +81,33 @@ class FileSystem:
         except:
             return extension.removeprefix(".")
 
-    def get_files_in_directory(self, directory: str, use_cache: bool = False) -> List[File]:
+    @staticmethod
+    def get_file_hash(file: str) -> str:
+        """
+        Compute and return the XXHash-64 hash of the given file.
+
+        :param file: The path to the file to hash.
+        :return: The XXHash-64 hash of the file in hexadecimal format.
+        """
+        hash_xx = xxhash.xxh64()
+        try:
+            with open(file, "rb") as f:
+                mapped_file = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+                hash_xx.update(mapped_file)
+                mapped_file.close()
+            return hash_xx.hexdigest()
+        except (FileNotFoundError, IOError, ValueError):
+            return "<FILE EMPTY>"
+
+    def get_files_in_directory(self, directory: str, use_cache: bool = False, calc_file_hashes: bool = False) -> \
+            List[File]:
         """
         Gets the files within a directory along with their respective file size in Megabytes.
         If anything fails an error will be thrown with a corresponding error message.
 
         :param directory: The directory of which the files are requested.
         :param use_cache: Makes call use the cache (if available) instead of checking again.
+        :param calc_file_hashes: Calculates the hash value of the file.
         :return: Returns a list of files (class File).
         """
         directory = self.clean_directory(directory)
@@ -117,7 +129,15 @@ class FileSystem:
                 full_path = os.path.join(directory, entry)
                 file_size = os.stat(full_path).st_size / (1024 * 1024)
                 last_updated = os.path.getmtime(full_path)
-                files.append(File(name=entry, location=directory, size_mb=file_size, last_updated=last_updated))
+                file_hash = self.get_file_hash(full_path) if calc_file_hashes else "N/A"
+
+                files.append(File(
+                    name=entry,
+                    location=directory,
+                    size_mb=file_size,
+                    last_updated=last_updated,
+                    file_hash=file_hash
+                ))
 
         # save to cache before returning
         self.file_cache[directory] = files

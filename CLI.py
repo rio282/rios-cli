@@ -5,7 +5,7 @@ import shutil
 import sys
 import webbrowser
 from datetime import date, datetime
-from typing import Final, List, Tuple
+from typing import Final, List
 
 import psutil
 from colorama import init, Fore
@@ -18,13 +18,13 @@ from games.horse_racing import HorseRace
 from games.slots import Slots
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
-from services.cursive.input import ListMenu, SliderMenu, InputMenu
 from services.cursive.display import TextPane, MusicVisualizer
+from services.cursive.input import ListMenu, SliderMenu, InputMenu
+from services.internal import SerializedEncoder
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
 from services.osys.fs import File
-from services.search import SearchResultEncoder
 
 intro_logo: Final[str] = Fore.GREEN + r"""
                                                       ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
@@ -106,12 +106,12 @@ class RiosCLI(cmd.Cmd):
             last_updated = datetime.fromtimestamp(file.last_updated).strftime("%Y-%m-%d %H:%M:%S").split()
             last_updated = f"{last_updated[0]} {Fore.LIGHTBLACK_EX}{last_updated[1]}{Fore.RESET}"
 
-            table_data.append([filename_display, file_size_display, file_type, last_updated])
+            table_data.append([filename_display, file_size_display, file_type, last_updated, file.file_hash])
 
         print(tabulate(
             table_data,
-            headers=[f"{Fore.WHITE}Filename", "Size", "Type", f"Updated{Fore.RESET}"],
-            colalign=("left", "right", "left")
+            headers=[f"{Fore.WHITE}Filename", "Size", "Type", "Updated", f"Hash{Fore.RESET}"],
+            colalign=("left", "right", "left", "left", "right")
         ))
 
     def list_directories(self, directories: List[str]):
@@ -180,13 +180,14 @@ class RiosCLI(cmd.Cmd):
                                    AutoCompletion.TYPE_DIRECTORIES)
 
     def do_ls(self, directory):
-        """Lists the files and directories in a directory."""
+        """Lists the files and directories in a directory. Options: --use-cache, --show-hash"""
         try:
             directory = directory.strip()
 
             print_dirs = False
             print_files = False
             use_cache = "--use-cache" in directory
+            calculate_hashes = "--show-hash" in directory
 
             if "--dirs" in directory:
                 print_dirs = True
@@ -209,19 +210,13 @@ class RiosCLI(cmd.Cmd):
                     directories = file_system.get_directories_in_directory(directory, use_cache)
                     self.list_directories(directories)
                 if print_files:
-                    files = file_system.get_files_in_directory(directory, use_cache)
+                    files = file_system.get_files_in_directory(directory, use_cache=use_cache,
+                                                               calc_file_hashes=calculate_hashes)
                     self.list_files(files)
         except Exception as e:
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
-                                   AutoCompletion.TYPE_DIRECTORIES_AND_ZIP)
-
-    def do_explorer(self, line):
-        print("TODO")
-
-    def complete_explorer(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
                                    AutoCompletion.TYPE_DIRECTORIES_AND_ZIP)
 
@@ -701,8 +696,7 @@ class RiosCLI(cmd.Cmd):
                     f"{Fore.CYAN}{pname}{Fore.RESET}"
                 ))
 
-        headers = [f"{Fore.WHITE}Connection To", f"{Fore.WHITE}Port Flow (L-E)", f"{Fore.WHITE}PID",
-                   f"{Fore.WHITE}Name"]
+        headers = [f"{Fore.WHITE}Connection To", "Port Flow (L-E)", "PID", f"Name{Fore.RESET}"]
         print()
         print(tabulate(rows, headers=headers))
 
@@ -888,7 +882,7 @@ class RiosCLI(cmd.Cmd):
 
         # display chosen command's cache
         content = file_system.get_file_content_binary(os.path.join(cache_directory, command_file))
-        stringified_content = json.dumps(content, indent=2, sort_keys=True, cls=SearchResultEncoder)
+        stringified_content = json.dumps(content, indent=2, sort_keys=True, cls=SerializedEncoder)
         TextPane.display(stringified_content, title=command_file.upper(), show_lines_in_title=True)
 
     def complete__cache(self, text, line, begidx, endidx):
