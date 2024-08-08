@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 import zipfile
@@ -15,6 +16,18 @@ class File:
 
     def __repr__(self):
         return f"{os.path.join(self.location, self.name)} | ~{self.size_mb:.2f}MB | {self.last_updated}"
+
+
+class FileEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, File):
+            return {
+                "name": obj.name,
+                "location": obj.location,
+                "size_mb": obj.size_mb,
+                "last_updated": obj.last_updated
+            }
+        return super().default(obj)
 
 
 class FileSystem:

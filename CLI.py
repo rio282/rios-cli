@@ -45,7 +45,7 @@ o888o  o888o          `Y8bood8P'  o888ooooood8 o888o⠀⠀          ⠀⡆⠀⠀
 
 class RiosCLI(cmd.Cmd):
     prompt: str = Fore.WHITE + "~$ "
-    nohelp: str = f"%s? What's that? -- I wonder who forgot to write documentation about this command... {Fore.WHITE}*ahem*{Fore.RESET}"
+    nohelp: str = f"*** %s? What's that? -- I wonder who forgot to write documentation about this command... {Fore.WHITE}*ahem*{Fore.RESET}"
     intro: Final[str] = f"{intro_logo}\nHello master, what can I do for you?"
 
     def __init__(self):
