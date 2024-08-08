@@ -226,24 +226,22 @@ class RiosCLI(cmd.Cmd):
         try:
             os.startfile(file_path)
         except FileNotFoundError:
-            print(f"File '{filename}' not found.")
+            print(f"{Fore.RED}File '{filename}' not found.")
         except Exception as e:
-            print(f"Error trying to open file: {e}")
+            self.__on_error(e)
 
     def complete_open(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
-    def do_create(self, filename, silent=False):
+    def do_create(self, filename):
         """Create a new file in the current directory."""
         file_path = os.path.join(self.current_directory, filename)
         try:
             if os.path.exists(file_path):
-                if not silent:
-                    print(f"Directory '{file_path}' already exists in directory '{file_path.removesuffix(filename)}'")
+                print(f"Directory '{file_path}' already exists in directory '{file_path.removesuffix(filename)}'")
             else:
                 with open(file_path, "w"):
-                    if not silent:
-                        print(f"File '{filename}' created in {self.current_directory}")
+                    print(f"File '{filename}' created in {self.current_directory}")
         except Exception as e:
             self.__on_error(e)
 
