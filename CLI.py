@@ -831,6 +831,8 @@ class RiosCLI(cmd.Cmd):
 
     def do__history(self, line):
         """Allows you to inspect the command history."""
+        # TODO: make --full flag show the items in a list menu, when opened show more details.
+
         line = line.strip()
         if line.lower() == "reset":
             confirmation = ListMenu.spawn(["Yes", "No"])
@@ -842,17 +844,17 @@ class RiosCLI(cmd.Cmd):
             self.default(line)
             return
 
-        limit = 25
+        max_log_length = 25
         valid_commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
-        for record in history_manager.history[::-1][:min(limit, len(history_manager.history))]:
+        for record in history_manager.history[::-1][:min(max_log_length, len(history_manager.history))]:
             timestamp = f"{Fore.LIGHTBLACK_EX}{int(record.timestamp.timestamp())}{Fore.RESET}"
             command_color = Fore.GREEN if record.command in valid_commands else Fore.RED
             command = f"{command_color}{record.command}{Fore.RESET}"
             subcommands = f"{Fore.LIGHTGREEN_EX}{' '.join(record.subcommands).strip()}{Fore.RESET}"
             print(timestamp, command, subcommands)
 
-        if len(history_manager.history) > limit:
-            print(f"\n{Fore.WHITE}And {len(history_manager.history) - limit} more...")
+        if len(history_manager.history) > max_log_length:
+            print(f"\n{Fore.WHITE}And {len(history_manager.history) - max_log_length} more...")
 
     def do__cache(self, line):
         """Allows you to inspect the cache of certain commands."""
