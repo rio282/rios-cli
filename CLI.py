@@ -218,6 +218,13 @@ class RiosCLI(cmd.Cmd):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
                                    AutoCompletion.TYPE_DIRECTORIES_AND_ZIP)
 
+    def do_explorer(self, line):
+        print("TODO")
+
+    def complete_explorer(self, text, line, begidx, endidx):
+        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
+                                   AutoCompletion.TYPE_DIRECTORIES_AND_ZIP)
+
     def do_open(self, filename):
         """Opens a file in the specified path."""
         file_path = os.path.join(self.current_directory, filename)
