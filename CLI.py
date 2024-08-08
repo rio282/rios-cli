@@ -233,7 +233,7 @@ class RiosCLI(cmd.Cmd):
     def complete_open(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
-    def do_create(self, filename):
+    def do_mk(self, filename):
         """Create a new file in the current directory."""
         file_path = os.path.join(self.current_directory, filename)
         try:
