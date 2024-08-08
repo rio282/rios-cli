@@ -34,10 +34,10 @@ class Search:
 
         # perform search if not in cache or cache expired
         results = self.provider.get_search(anime_name)
-        anime = [Anime.from_search_result(self.provider, r) for r in results]
+        animes = [Anime.from_search_result(self.provider, r) for r in results]
 
-        self.animes_cache[anime_name] = (current_time, anime)
-        return anime
+        self.animes_cache[anime_name] = (current_time, animes)
+        return animes
 
     def get_episodes_by_anime(self, anime: Anime, lang: LanguageTypeEnum = LanguageTypeEnum.SUB) -> List[Episode]:
         """

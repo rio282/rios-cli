@@ -417,6 +417,7 @@ class RiosCLI(cmd.Cmd):
                 if not anime_name:
                     self.do_anime(line)
                     return
+                anime_name = anime_name.strip()
             else:
                 return
 
@@ -424,6 +425,12 @@ class RiosCLI(cmd.Cmd):
             if not animes:
                 print(f"{Fore.RED}No animes found with name: '{anime_name}'")
                 return
+
+            dt = datetime.fromtimestamp(anime.lookup.animes_cache[anime_name][0])
+            formatted_dt = dt.strftime("%Y-%m-%d @ %H:%M:%S")
+            print(f"{Fore.LIGHTGREEN_EX}Search results for query '{anime_name}' were last updated on {formatted_dt}.")
+            print(f"{Fore.LIGHTGREEN_EX}Use the '--refresh' flag to force-refresh the search results.")
+            print()
 
             # choose anime
             chosen_anime = ListMenu.spawn(animes, "Choose an anime:")
