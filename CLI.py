@@ -131,12 +131,14 @@ class RiosCLI(cmd.Cmd):
         file_system.load()
         local_searcher.load()
         web_searcher.load()
+        anime.lookup.load()
         history_manager.load()
 
     def postloop(self):
         file_system.save()
         local_searcher.save()
         web_searcher.save()
+        anime.lookup.save()
         history_manager.save()
 
     def emptyline(self):
@@ -390,6 +392,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         verbose = "--verbose" in line
+        force_refresh = "--refresh" in line
 
         # make preparations
         animes_dir = os.path.join(os.path.expanduser("~/Videos"), "anime")
@@ -417,7 +420,7 @@ class RiosCLI(cmd.Cmd):
             else:
                 return
 
-            animes = anime.lookup.search_anime_by_name(anime_name)
+            animes = anime.lookup.search_anime_by_name(anime_name, force_refresh=force_refresh)
             if not animes:
                 print(f"{Fore.RED}No animes found with name: '{anime_name}'")
                 return
@@ -462,7 +465,7 @@ class RiosCLI(cmd.Cmd):
             self.do_open(episode_file)
 
     def complete_anime(self, text, line, begidx, endidx):
-        subcommands = ["--verbose"]
+        subcommands = ["--verbose", "--refresh"]
         return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
 
     def do_music(self, subcommand):
