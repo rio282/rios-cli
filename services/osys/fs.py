@@ -1,11 +1,12 @@
-import json
-import mmap
 import os
+import re
+import mmap
 import pickle
 import zipfile
 from typing import List, Tuple, Dict, Optional, Any
-import win32api
+
 import xxhash
+import win32api
 from win32con import HKEY_CLASSES_ROOT
 
 
@@ -28,7 +29,7 @@ class FileSystem:
         self.directory_cache: Dict[str, List[str]] = {}
 
     @staticmethod
-    def clean_directory(directory: str) -> str:
+    def clean_directory(directory: str, possible_args=None, filter_any_args: bool = False) -> str:
         """
         Cleans and converts a given directory path to an absolute path.
 
@@ -40,22 +41,46 @@ class FileSystem:
         - If neither of the above conditions are met, it returns the path relative to the current working directory.
 
         :param directory: The directory path to be cleaned and converted.
-        :return: The absolute path of the given directory.
+        :param possible_args: Possible commands to filter out.
+        :param filter_any_args: Filters out anything that looks like an argument.
+        :return: The absolute path of the given directory (without any arguments left behind).
         """
-        directory = (directory
-                     .replace("/", "\\")
-                     .replace("--use-cache", "")
-                     .replace("--show-hash", "")
-                     .replace("--inspect-cache", "")
-                     .replace("--dirs", "")
-                     .replace("--files", "")
-                     .strip())
+        directory = directory.replace("/", "\\").removesuffix("\\").strip()
+
+        if filter_any_args:
+            # my lovely, precious little helpers...
+            arg_pattern = re.compile(r"^--\w+|^-{1,2}\w+")
+
+            def has_file_ext(part: str) -> bool:
+                _, ext = os.path.splitext(part)
+                return bool(ext)
+
+            # magic: the gathering
+            dirs = directory.split("\\")
+            toplevel = dirs.pop()
+
+            cutoff = 0
+            toplevel_cases = toplevel.split()
+            for cutoff, possible_arg in enumerate(toplevel_cases):
+                if has_file_ext(possible_arg):
+                    break
+                elif arg_pattern.match(possible_arg):
+                    cutoff -= 1
+                    break
+
+            dirs.append(" ".join(toplevel_cases[:cutoff + 1]))
+            directory = "\\".join(dirs)
+        elif possible_args:
+            for arg in possible_args:
+                directory = directory.replace(arg.strip(), "").strip()
+
+        directory = directory.strip()
 
         # ensure that the drive letter is uppercase
         if len(directory) > 1 and directory[1] == ":":
             directory = directory[0].upper() + directory[1:]
 
-        # real honestly
+        # real af honestly
         if os.path.isabs(directory):
             return os.path.realpath(os.path.abspath(directory))
         elif directory.startswith("~\\"):
@@ -270,3 +295,56 @@ class FileSystem:
                 cache_data = pickle.load(f)
                 self.file_cache = cache_data.get("file_cache", {})
                 self.directory_cache = cache_data.get("directory_cache", {})
+
+
+if __name__ == "__main__":
+    # Written with the help of ChatGPT, because i was too lazy...
+    test_cases = [
+        # Test cases for filtering arguments
+        {
+            "description": "Path with arguments",
+            "input": "C:\\path\\to\\file file.txt --flag",
+            "possible_args": ["--flag"],
+            "filter_any_args": True,
+            "expected": os.path.realpath(os.path.join(os.getcwd(), "C:\\path\\to\\file file.txt"))
+        },
+        # Test cases for path with spaces
+        {
+            "description": "Path with spaces",
+            "input": "C:\\Program Files\\MyApp",
+            "filter_any_args": False,
+            "expected": os.path.realpath("C:\\Program Files\\MyApp")
+        },
+        # Test case for home directory
+        {
+            "description": "Path with user home directory",
+            "input": "~/Documents/MyFolder",
+            "filter_any_args": False,
+            "expected": os.path.realpath(os.path.join(os.path.expanduser("~"), "Documents\\MyFolder"))
+        },
+        # Test case for relative path
+        {
+            "description": "Relative path",
+            "input": "docs\\report.pdf",
+            "filter_any_args": False,
+            "expected": os.path.realpath(os.path.join(os.getcwd(), "docs\\report.pdf"))
+        },
+        # Test case for cleaning drive letter
+        {
+            "description": "Path with lowercase drive letter",
+            "input": "c:\\some\\path",
+            "filter_any_args": False,
+            "expected": os.path.realpath("C:\\some\\path")
+        }
+    ]
+
+    for case in test_cases:
+        result = FileSystem.clean_directory(
+            case["input"],
+            possible_args=case.get("possible_args"),
+            filter_any_args=case.get("filter_any_args", False)
+        )
+        assert result == case[
+            "expected"], f"Failed {case['description']}: expected /{case['expected']}/, got /{result}/"
+
+    print("All tests passed.")

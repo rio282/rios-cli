@@ -20,7 +20,7 @@ from services import youtube, anime, file_system, com, processes, statistics, we
     history_manager, cache_directory
 from services.cursive.display import TextPane, MusicVisualizer
 from services.cursive.input import ListMenu, SliderMenu, InputMenu
-from services.internal import SerializedEncoder
+from services.internal import SerializedEncoder, CommandArgsParser
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
@@ -181,46 +181,64 @@ class RiosCLI(cmd.Cmd):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
                                    AutoCompletion.TYPE_DIRECTORIES)
 
-    def do_ls(self, directory):
-        """Lists the files and directories in a directory. Options: --use-cache, --show-hash"""
+    def do_ls(self, line):
+        """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
         try:
-            directory = directory.strip()
+            directory = file_system.clean_directory(line, filter_any_args=True)
 
-            print_dirs = False
-            print_files = False
-            use_cache = "--use-cache" in directory
-            calculate_hashes = "--show-hash" in directory
+            # parse args
+            parser = CommandArgsParser(line)
 
-            if "--dirs" in directory:
-                print_dirs = True
-            if "--files" in directory:
-                print_files = True
+            print_dirs = parser.is_arg_present("dirs") or parser.is_arg_present("dir")
+            print_files = parser.is_arg_present("files") or parser.is_arg_present("file")
             if not print_dirs and not print_files:
                 print_dirs = True
                 print_files = True
 
+            use_cache = parser.is_arg_present("cache")
+            calculate_hashes = parser.is_arg_present("chashes")
+
+            perform_matching = parser.is_arg_present("match")
+            match_query = parser.get_value_of_arg("match")
+
+            # zip files
             if os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip":
-                # zip files
                 zip_content = file_system.get_zip_content(directory)
                 if print_dirs:
                     self.list_directories(zip_content.get("directories"))
                 if print_files:
                     self.list_files(zip_content.get("files"))
-            else:
-                # normal directories
-                if print_dirs:
-                    directories = file_system.get_directories_in_directory(directory, use_cache)
-                    self.list_directories(directories)
-                if print_files:
-                    files = file_system.get_files_in_directory(directory, use_cache=use_cache,
-                                                               calc_file_hashes=calculate_hashes)
-                    self.list_files(files)
+                return
+
+            # normal directories
+            if print_dirs:
+                directories = file_system.get_directories_in_directory(directory, use_cache)
+                if perform_matching and match_query:
+                    directories = AutoCompletion.matches_of(directories, match_query,
+                                                            completion_mode=AutoCompletion.MODE_MATCH_ANY)
+                self.list_directories(directories)
+            if print_files:
+                files = file_system.get_files_in_directory(directory, use_cache, calculate_hashes)
+                if perform_matching and match_query:
+                    files = AutoCompletion.matches_of(files, match_query,
+                                                      completion_mode=AutoCompletion.MODE_MATCH_ANY)
+                self.list_files(files)
         except Exception as e:
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
-                                   AutoCompletion.TYPE_DIRECTORIES_AND_ZIP)
+        matches = AutoCompletion.path(
+            self.current_directory,
+            text, line, begidx, endidx,
+            AutoCompletion.TYPE_DIRECTORIES_AND_ZIP
+        )
+        arg_matches = AutoCompletion.matches_of(
+            ["--cache", "--chashes", "--file", "--files", "--dir", "--dirs", "--match"],
+            text
+        )
+
+        matches.extend(arg_matches)
+        return arg_matches
 
     def do_open(self, filename):
         """Opens a file in the specified path."""
@@ -701,7 +719,7 @@ class RiosCLI(cmd.Cmd):
 
                 rows.append((
                     f"{Fore.GREEN}{raddr.split(':')[0]}{Fore.RESET}",
-                    f"{laddr.split(':').pop().ljust(5)} {Fore.LIGHTBLACK_EX}<->{Fore.RESET} {raddr.split(':').pop().rjust(5)}",
+                    f"{laddr.split(':').pop().ljust(5)} {Fore.LIGHTBLACK_EX}:{Fore.RESET} {raddr.split(':').pop().rjust(5)}",
                     f"{Fore.LIGHTCYAN_EX}{pid}{Fore.RESET}",
                     f"{Fore.CYAN}{pname}{Fore.RESET}"
                 ))

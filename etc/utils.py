@@ -111,7 +111,7 @@ class AutoCompletion:
         return completion
 
     @staticmethod
-    def matches_of(possible_matches: List[str], text: str, line: str, begidx: int, endidx: int,
+    def matches_of(possible_matches: List[str], text: str, line: str = None, begidx: int = None, endidx: int = None,
                    completion_mode=MODE_STARTSWITH) -> List[str]:
         if not text:
             return possible_matches
@@ -123,5 +123,8 @@ class AutoCompletion:
             return [best_match]
         elif completion_mode == AutoCompletion.MODE_MATCH_ANY:
             return FuzzyMatcher.any_matches(text, possible_matches)
+        elif completion_mode == AutoCompletion.MODE_STARTSWITH:
+            return [entry for entry in possible_matches if entry.lower().startswith(text)]
 
-        return [entry for entry in possible_matches if entry.lower().startswith(text)]
+        # ???
+        return possible_matches
