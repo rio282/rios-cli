@@ -92,7 +92,7 @@ class RiosCLI(cmd.Cmd):
         print(f"{Fore.GREEN}Files ({len(files)}):")
 
         if not files:
-            return 
+            return
 
         table_data = []
         max_length = 48
@@ -242,7 +242,7 @@ class RiosCLI(cmd.Cmd):
         )
 
         matches.extend(arg_matches)
-        return arg_matches
+        return matches
 
     def do_open(self, filename):
         """Opens a file in the specified path."""
