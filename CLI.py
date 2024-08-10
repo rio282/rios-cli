@@ -91,6 +91,9 @@ class RiosCLI(cmd.Cmd):
         print()
         print(f"{Fore.GREEN}Files ({len(files)}):")
 
+        if not files:
+            return 
+
         table_data = []
         max_length = 48
 
