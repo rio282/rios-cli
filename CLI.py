@@ -185,6 +185,7 @@ class RiosCLI(cmd.Cmd):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
         try:
             directory = file_system.clean_directory(line, filter_any_args=True)
+            is_zip_file = os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip"
 
             # parse args
             parser = CommandArgsParser(line)
@@ -202,7 +203,7 @@ class RiosCLI(cmd.Cmd):
             match_query = parser.get_value_of_arg("match")
 
             # zip files
-            if os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip":
+            if is_zip_file:
                 zip_content = file_system.get_zip_content(directory)
                 if print_dirs:
                     self.list_directories(zip_content.get("directories"))

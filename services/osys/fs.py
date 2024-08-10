@@ -62,7 +62,7 @@ class FileSystem:
             cutoff = 0
             toplevel_cases = toplevel.split()
             for cutoff, possible_arg in enumerate(toplevel_cases):
-                if has_file_ext(possible_arg):
+                if has_file_ext(possible_arg):  # could be .zip for example
                     break
                 elif arg_pattern.match(possible_arg):
                     cutoff -= 1
