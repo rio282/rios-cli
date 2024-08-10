@@ -31,19 +31,19 @@ class FileSystem:
     @staticmethod
     def clean_directory(directory: str, possible_args=None, filter_any_args: bool = False) -> str:
         """
-        Cleans and converts a given directory path to an absolute path.
+        Cleans and converts a given directory path to an absolute path, ensuring proper formatting.
 
-        The method processes the input directory path to ensure it is in the correct format:
-        - Converts forward slashes to backward slashes for consistency.
-        - Ensures the drive letter is uppercase.
-        - If the directory starts with a drive letter (e.g., "C:\"), it returns the absolute path.
-        - If the directory starts with "~\", it replaces it with the user's home directory.
-        - If neither of the above conditions are met, it returns the path relative to the current working directory.
+        This method processes the input directory path to:
+        - Convert forward slashes to backward slashes for consistency.
+        - Ensure the drive letter is uppercase.
+        - Handle paths starting with a drive letter (e.g., "C:\") or user home directory (e.g., "~\").
+        - Remove any arguments or possible command-line flags from the path if `filter_any_args` is True.
+        - Handle cases where the path includes file extensions, preserving them.
 
-        :param directory: The directory path to be cleaned and converted.
-        :param possible_args: Possible commands to filter out.
-        :param filter_any_args: Filters out anything that looks like an argument.
-        :return: The absolute path of the given directory (without any arguments left behind).
+        :param directory: The directory path to be cleaned and converted. This can be an absolute or relative path and may include spaces and arguments.
+        :param possible_args: A list of possible command-line arguments or flags to filter out from the path. If `filter_any_args` is True, these will be removed from the path.
+        :param filter_any_args: If True, the method will remove any parts of the path that look like command-line arguments or flags. Arguments are identified by starting with '-' or '--'.
+        :return: The cleaned and absolute path of the given directory. The path will have been normalized to use backward slashes, and unnecessary arguments or flags will have been removed if `filter_any_args` is True.
         """
         directory = directory.replace("/", "\\").removesuffix("\\").strip()
 
