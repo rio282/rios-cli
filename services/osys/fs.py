@@ -198,11 +198,12 @@ class FileSystem:
         self.directory_cache[directory] = directories
         return directories
 
-    def zip(self, folder: str) -> Optional[bool]:
+    def zip(self, folder: str, with_password: Optional[str] = None) -> Optional[bool]:
         """
         Zips a folder.
-        :param folder: the path to the folder that needs to be zipped
-        :return: if the operation succeeded
+        :param folder: The path to the folder that needs to be zipped.
+        :param with_password: Adds password protection.
+        :return: If the operation succeeded
         """
         if not os.path.isdir(folder):
             return False
@@ -219,11 +220,12 @@ class FileSystem:
         except Exception as e:
             raise e
 
-    def unzip(self, zipped_file: str) -> Optional[bool]:
+    def unzip(self, zipped_file: str, using_password: Optional[str] = None) -> Optional[bool]:
         """
         Unzips a zip folder.
-        :param zipped_file: the zip folder to unzip
-        :return: if the operation succeeded
+        :param zipped_file: The zip folder to unzip.
+        :param using_password: unzips using a password.
+        :return: If the operation succeeded
         """
         if not os.path.isfile(zipped_file):
             return False

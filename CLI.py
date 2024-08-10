@@ -356,10 +356,17 @@ class RiosCLI(cmd.Cmd):
     def complete_rm(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
-    def do_zip(self, directory):
+    def do_zip(self, line):
         """Zips a directory."""
         try:
-            file_system.zip(directory)
+            directory = file_system.clean_directory(line, possible_args=["password"])
+            parser = CommandArgsParser(line)
+
+            # TODO: implement 'with_password' arg in fs.zip(dir)
+            # TODO: add this as well for the unzip command
+            password = parser.get_value_of_arg("password")
+            file_system.zip(directory, with_password=password)
+
             print(Fore.GREEN + f"Zipped: {directory}")
         except Exception as e:
             self.__on_error(e)

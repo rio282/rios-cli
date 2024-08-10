@@ -47,7 +47,7 @@ class CommandArgsParser:
 
     def get_value_of_arg(self, arg: str) -> Optional[str]:
         if not self.is_arg_present(arg):
-            return
+            return None
 
         pos = self.args_raw.index(self.__remove_arg_prefix(arg))
         val = pos + 1
