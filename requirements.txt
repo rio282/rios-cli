@@ -13,6 +13,7 @@ anipy-api>=3.1.8
 pygame>=2.6.0
 sounddevice>=0.2.1
 pyaudio>=0.2.14
+pyzipper>=0.3.6
 
 # system
 pywin32>=306

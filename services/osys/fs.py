@@ -3,10 +3,12 @@ import re
 import mmap
 import pickle
 import zipfile
-from typing import List, Tuple, Dict, Optional, Any
+import pyzipper
+from datetime import datetime
+from typing import List, Dict, Optional, Any
 
-import xxhash
 import win32api
+import xxhash
 from win32con import HKEY_CLASSES_ROOT
 
 
@@ -29,7 +31,7 @@ class FileSystem:
         self.directory_cache: Dict[str, List[str]] = {}
 
     @staticmethod
-    def clean_directory(directory: str, possible_args=None, filter_any_args: bool = False) -> str:
+    def clean_directory(directory: str, filter_args: bool = False) -> str:
         """
         Cleans and converts a given directory path to an absolute path, ensuring proper formatting.
 
@@ -41,13 +43,12 @@ class FileSystem:
         - Handle cases where the path includes file extensions, preserving them.
 
         :param directory: The directory path to be cleaned and converted. This can be an absolute or relative path and may include spaces and arguments.
-        :param possible_args: A list of possible command-line arguments or flags to filter out from the path. If `filter_any_args` is True, these will be removed from the path.
-        :param filter_any_args: If True, the method will remove any parts of the path that look like command-line arguments or flags. Arguments are identified by starting with '-' or '--'.
+        :param filter_args: If True, the method will remove any parts of the path that look like command-line arguments or flags. Arguments are identified by starting with '-' or '--'.
         :return: The cleaned and absolute path of the given directory. The path will have been normalized to use backward slashes, and unnecessary arguments or flags will have been removed if `filter_any_args` is True.
         """
         directory = directory.replace("/", "\\").removesuffix("\\").strip()
 
-        if filter_any_args:
+        if filter_args:
             # my lovely, precious little helpers...
             arg_pattern = re.compile(r"^--\w+|^-{1,2}\w+")
 
@@ -70,9 +71,6 @@ class FileSystem:
 
             dirs.append(" ".join(toplevel_cases[:cutoff + 1]))
             directory = "\\".join(dirs)
-        elif possible_args:
-            for arg in possible_args:
-                directory = directory.replace(arg.strip(), "").strip()
 
         directory = directory.strip()
 
@@ -209,35 +207,41 @@ class FileSystem:
             return False
 
         try:
-            zip_file = f"{folder}.zip"
-            with zipfile.ZipFile(file=zip_file, mode="w", compression=zipfile.ZIP_DEFLATED) as zipf:
+            with pyzipper.AESZipFile(file=f"{folder}.zip", mode="w", compression=pyzipper.ZIP_DEFLATED) as zip_file:
+                if with_password:
+                    zip_file.setpassword(with_password.encode("utf-8"))
+                    zip_file.setencryption(pyzipper.WZ_AES, nbits=256)
+
                 for root, dirs, files in os.walk(folder):
                     for file in files:
                         file_path = os.path.join(root, file)
                         arcname = os.path.relpath(file_path, start=folder)
-                        zipf.write(file_path, arcname)
+                        zip_file.write(file_path, arcname)
             return True
         except Exception as e:
             raise e
 
-    def unzip(self, zipped_file: str, using_password: Optional[str] = None) -> Optional[bool]:
+    def unzip(self, zipped_file: str, with_password: Optional[str] = None) -> Optional[bool]:
         """
         Unzips a zip folder.
         :param zipped_file: The zip folder to unzip.
-        :param using_password: unzips using a password.
+        :param with_password: unzips using a password.
         :return: If the operation succeeded
         """
         if not os.path.isfile(zipped_file):
             return False
 
         try:
-            with zipfile.ZipFile(file=zipped_file, mode="r") as zip_ref:
+            with pyzipper.AESZipFile(file=zipped_file, mode="r", compression=pyzipper.ZIP_DEFLATED) as zip_ref:
+                if with_password:
+                    zip_ref.setpassword(with_password.encode("utf-8"))
+
                 zip_ref.extractall(os.path.dirname(zipped_file))
             return True
-        except zipfile.BadZipFile as e:
+        except (pyzipper.BadZipFile, RuntimeError) as e:
             raise e
 
-    def get_zip_content(self, zipped_file: str) -> Dict[str, List[Tuple[str, float]]]:
+    def get_zip_content(self, zipped_file: str) -> Dict[str, List[str] or List[File]]:
         """
         Returns the content of the zipfile.
         :param zipped_file: The zipfile of which the contents will be viewed of.
@@ -251,12 +255,19 @@ class FileSystem:
                 directories = []
                 files = []
                 for info in zip_ref.infolist():
-                    file_size = info.file_size / (1024 * 1024)  # convert bytes to megabytes
                     if info.is_dir():
                         directories.append(info.filename)
                     else:
-                        files.append((info.filename, file_size))
+                        file_size = info.file_size / (1024 * 1024)  # convert bytes to megabytes
+                        last_updated = float(datetime(*info.date_time).timestamp())
 
+                        files.append(File(
+                            name=info.filename,
+                            location=zipped_file,
+                            size_mb=file_size,
+                            last_updated=last_updated,
+                            file_hash="NOT SUPPORTED (ZIP)"
+                        ))
                 return {
                     "directories": directories,
                     "files": files
@@ -344,7 +355,7 @@ if __name__ == "__main__":
         result = FileSystem.clean_directory(
             case["input"],
             possible_args=case.get("possible_args"),
-            filter_any_args=case.get("filter_any_args", False)
+            filter_args=case.get("filter_any_args", False)
         )
         assert result == case[
             "expected"], f"Failed {case['description']}: expected /{case['expected']}/, got /{result}/"

@@ -187,7 +187,7 @@ class RiosCLI(cmd.Cmd):
     def do_ls(self, line):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
         try:
-            directory = file_system.clean_directory(line, filter_any_args=True)
+            directory = file_system.clean_directory(line, filter_args=True)
             is_zip_file = os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip"
 
             # parse args
@@ -256,6 +256,9 @@ class RiosCLI(cmd.Cmd):
 
     def complete_open(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
+
+    def do_cwd(self, line):
+        self.do_open(self.script_wd)
 
     def do_mk(self, filename):
         """Create a new file in the current directory."""
@@ -361,27 +364,37 @@ class RiosCLI(cmd.Cmd):
 
     def do_zip(self, line):
         """Zips a directory."""
+        directory = file_system.clean_directory(line, filter_args=True)
+        parser = CommandArgsParser(line)
+
         try:
-            directory = file_system.clean_directory(line, possible_args=["password"])
-            parser = CommandArgsParser(line)
-
-            # TODO: implement 'with_password' arg in fs.zip(dir)
-            # TODO: add this as well for the unzip command
             password = parser.get_value_of_arg("password")
-            file_system.zip(directory, with_password=password)
-
-            print(Fore.GREEN + f"Zipped: {directory}")
+            success = file_system.zip(directory, with_password=password)
+            if success:
+                print(f"{Fore.GREEN}Zipped: {directory}")
+            else:
+                print(f"{Fore.RED}Something unexpected went wrong...")
         except Exception as e:
             self.__on_error(e)
 
     def complete_zip(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
-    def do_unzip(self, zip_file):
+    def do_unzip(self, line):
         """Unzips a directory."""
+        zip_file = file_system.clean_directory(line, filter_args=True)
+        parser = CommandArgsParser(line)
+
         try:
-            file_system.unzip(zip_file)
-            print(Fore.GREEN + f"Unzipped: {zip_file}")
+            password = parser.get_value_of_arg("password")
+            success = file_system.unzip(zip_file, with_password=password)
+            if success:
+                print(f"{Fore.GREEN}Unzipped: {zip_file}")
+            else:
+                print(f"{Fore.RED}Something unexpected went wrong...")
+        except RuntimeError:
+            print(f"{Fore.RED}This operation threw a RuntimeError...")
+            print(f"\t{Fore.RED} -> File '{zip_file}' is most-likely encrypted with a password.")
         except Exception as e:
             self.__on_error(e)
 
