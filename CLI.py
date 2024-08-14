@@ -147,15 +147,14 @@ class RiosCLI(cmd.Cmd):
     def emptyline(self):
         pass
 
-    def do_hello(self, line):
-        """Replies with Hi!"""
-        print("Hi!")
+    def do_hello(self, name):
+        """Replies with 'Hi!' or 'Hello <name>!'"""
+        if not name:
+            print("Hi!")
+        else:
+            print(f"Hello {name}!")
 
-    def do_hi(self, line):
-        """Replies with Hello!"""
-        print("Hello!")
-
-    def do_ping(self, line):
+    def do_ping(self, _):
         """Replies with Pong!"""
         print("Pong!")
 
@@ -406,7 +405,7 @@ class RiosCLI(cmd.Cmd):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
                                    AutoCompletion.TYPE_FILES)
 
-    def do_fart(self, line):
+    def do_fart(self, _):
         """Plays fart sound."""
         fart_sound_wav = os.path.join(self.script_wd, "res", "fart.wav")
         playsound_deferred(fart_sound_wav)
@@ -571,7 +570,7 @@ class RiosCLI(cmd.Cmd):
         subcommands = ["pause", "stop", "resume", "play", "playing", "visualizer"]
         return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
 
-    def do_config(self, line):
+    def do_config(self, _):
         """Opens config editor."""
         # select section
         sections = [item[0] for item in self.config.config.items()]  # because config.sections() doesn't include DEFAULT
@@ -697,8 +696,10 @@ class RiosCLI(cmd.Cmd):
 
         self.default(subcommands)
 
-    def do_ustats(self, line):
+    def do_ustats(self, _):
         """Usage statistics."""
+        # *** should instead use tabulate, but i spent too long on it...
+
         stats = statistics.all
         align_length = 20
 
@@ -730,7 +731,7 @@ class RiosCLI(cmd.Cmd):
             f"{'Free:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_free.ljust(align_length)} {disk_free.ljust(align_length)}"
         )
 
-    def do_netstat(self, line):
+    def do_netstat(self, _):
         connections = psutil.net_connections(kind="inet")
         rows = []
 
@@ -850,13 +851,13 @@ class RiosCLI(cmd.Cmd):
         else:
             self.do_open(selected_result.location)
 
-    def do_clear(self, line):
+    def do_clear(self, _):
         """Clears screen."""
         os.system(self.clear_command)
         if self.config.config.getboolean(section="DEFAULT", option="display_intro"):
             print(self.intro)
 
-    def do_q(self, line):
+    def do_q(self, _):
         """Exit CLI."""
         return True
 
