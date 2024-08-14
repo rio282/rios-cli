@@ -257,8 +257,12 @@ class RiosCLI(cmd.Cmd):
     def complete_open(self, text, line, begidx, endidx):
         return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
 
-    def do_cwd(self, line):
-        self.do_open(self.script_wd)
+    def do__owd(self, line):
+        """Opens the original working directory. (Add a '?' to display the path)"""
+        if line.strip() == "?":
+            print(self.script_wd)
+        else:
+            self.do_open(self.script_wd)
 
     def do_mk(self, filename):
         """Create a new file in the current directory."""
@@ -729,6 +733,7 @@ class RiosCLI(cmd.Cmd):
     def do_netstat(self, line):
         connections = psutil.net_connections(kind="inet")
         rows = []
+
         for conn in connections:
             if conn.status == "ESTABLISHED":
                 laddr = f"{conn.laddr.ip}:{conn.laddr.port}" if conn.laddr else "-"
@@ -742,13 +747,13 @@ class RiosCLI(cmd.Cmd):
                     pname = "-"
 
                 rows.append((
-                    f"{Fore.GREEN}{raddr.split(':')[0]}{Fore.RESET}",
-                    f"{laddr.split(':').pop().ljust(5)} {Fore.LIGHTBLACK_EX}:{Fore.RESET} {raddr.split(':').pop().rjust(5)}",
-                    f"{Fore.LIGHTCYAN_EX}{pid}{Fore.RESET}",
-                    f"{Fore.CYAN}{pname}{Fore.RESET}"
+                    f"{Fore.GREEN}{pid}{Fore.RESET}",
+                    f"{laddr.split(':').pop().ljust(5)} -> {raddr.split(':').pop().rjust(5)}:{Fore.CYAN}{raddr.split(':')[0]}{Fore.RESET}",
+                    f"{pname}"
                 ))
 
-        headers = [f"{Fore.WHITE}Connection To", "Port Flow (L-E)", "PID", f"Name{Fore.RESET}"]
+        rows = sorted(rows, key=lambda x: x[2])  # NOTE: WATCH OUT WITH THIS LINE WHEN CHANGING THE CODE OF THIS METHOD
+        headers = [f"{Fore.WHITE}PID", "Connected To", f"Name{Fore.RESET}"]
         print(f"\n{Fore.GREEN}*** Open connection(s):\n")
         print(tabulate(rows, headers=headers))
 
