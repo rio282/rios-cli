@@ -20,6 +20,7 @@ class HorseRace:
         self.horses: Final[List[Horse]] = [Horse() for _ in range(horses)]
         self.update_delay: Final[float] = update_delay
         self.winner: Optional[Horse] = None
+        self.winning_number: Optional[int] = None
 
     def __get_longest_name_length(self) -> int:
         return len(max(self.horses, key=lambda _horse: len(_horse.name)).name)
@@ -43,6 +44,7 @@ class HorseRace:
                     horse.distance += random.randint(0, 5)
                     if horse.distance >= finish_line:
                         self.winner = horse
+                        self.winning_number = idx + 1
                         horse.distance = finish_line
                         break
 

@@ -803,7 +803,9 @@ class RiosCLI(cmd.Cmd):
                 playsound_deferred(horse_sound_wav)
 
             race.start()
-            print(f"\n{Fore.GREEN}{race.winner} came out on top as the best of {horses_count} horses!")
+            print(
+                f"\n{Fore.GREEN}{race.winner} (no. {race.winning_number}) came out on top as the best of {horses_count} horses!"
+            )
         except AttributeError as e:
             print(f"{Fore.RED}{e}")
         except Exception as yeah_we_messed_up:
