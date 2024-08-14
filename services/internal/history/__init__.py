@@ -11,7 +11,7 @@ class Record:
         self.subcommands: Final[List[str]] = subcommands
 
     def __repr__(self):
-        return f"{int(self.timestamp.timestamp())} -> {self.command}, <{' '.join(self.subcommands)}>"
+        return f"{self.timestamp} @ {self.command.center(32)} & [{' '.join(self.subcommands)}]"
 
 
 class HistoryManager:

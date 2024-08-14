@@ -814,7 +814,7 @@ class RiosCLI(cmd.Cmd):
     def complete_horserace(self, text, line, begidx, endidx):
         return AutoCompletion.matches_of(["--silent"], text, line, begidx, endidx)
 
-    def do_slots(self, line):
+    def do_slots(self, _):
         slots = Slots()
         slots.play()
 
@@ -881,14 +881,15 @@ class RiosCLI(cmd.Cmd):
 
     def do__history(self, line):
         """Allows you to inspect the command history."""
-        # TODO: make --full flag show the items in a list menu, when opened show more details.
-
         line = line.strip()
         if line.lower() == "reset":
             confirmation = ListMenu.spawn(["Yes", "No"])
             if confirmation and confirmation.lower() == "yes":
                 history_manager.history = []
                 print(f"{Fore.GREEN}Reset command history.")
+            return
+        elif line.lower() == "checkout":
+            TextPane.display(history_manager.history, title="Checkout Full History", show_lines_in_title=True)
             return
         elif line:
             self.default(line)
@@ -905,6 +906,10 @@ class RiosCLI(cmd.Cmd):
 
         if len(history_manager.history) > max_log_length:
             print(f"\n{Fore.WHITE}And {len(history_manager.history) - max_log_length} more...")
+
+    def complete__history(self, text, line, begidx, endidx):
+        commands = ["reset", "checkout"]
+        return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
 
     def do__cache(self, line):
         """Allows you to inspect the cache of certain commands."""

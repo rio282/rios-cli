@@ -1,13 +1,14 @@
 import pyaudio
 import numpy as np
 import curses
-from typing import Optional, Final
+from typing import Optional, Final, List
 
 
 class TextPane:
     @staticmethod
-    def display(content: str, title: str = "", show_lines_in_title: bool = False) -> None:
+    def display(content: str or List, title: str = "", show_lines_in_title: bool = False) -> None:
         """Displays the given content in a scrollable pane using curses."""
+        content = "\n".join([str(item) for item in content]) if isinstance(content, list) else content
         title = f"{title} ({content.count('\n') + 1} LINES)" if show_lines_in_title else title
 
         def inner(stdscr: curses.window) -> None:
