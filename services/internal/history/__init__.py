@@ -19,9 +19,10 @@ class HistoryManager:
         self.cache_dir: Final[str] = cache_dir
         self.cache_file: Final[str] = f"{cache_dir}/cmd.history"
         self.history: List[Record] = []
+        self.is_tracking: bool = True
 
     def record_line(self, line: str) -> None:
-        if not line.strip():  # empty line
+        if not self.is_tracking or not line.strip():
             return
 
         parts = line.split()

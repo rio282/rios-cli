@@ -882,17 +882,24 @@ class RiosCLI(cmd.Cmd):
     def do__history(self, line):
         """Allows you to inspect the command history."""
         line = line.strip()
-        if line.lower() == "reset":
-            confirmation = ListMenu.spawn(["Yes", "No"])
-            if confirmation and confirmation.lower() == "yes":
-                history_manager.history = []
-                print(f"{Fore.GREEN}Reset command history.")
-            return
-        elif line.lower() == "checkout":
-            TextPane.display(history_manager.history, title="Checkout Full History", show_lines_in_title=True)
-            return
-        elif line:
-            self.default(line)
+        if line:
+            subcommand = line.strip().lower()
+            if subcommand == "reset":
+                confirmation = ListMenu.spawn(["Yes", "No"])
+                if confirmation and confirmation.lower() == "yes":
+                    history_manager.history = []
+                    print(f"{Fore.GREEN}Reset command history.")
+            elif subcommand == "checkout":
+                TextPane.display(history_manager.history, title="Checkout Full History", show_lines_in_title=True)
+            elif subcommand in ("on", "off"):
+                toggled_on = subcommand == "on"
+                if not toggled_on:  # won't register this line otherwise
+                    history_manager.record_line(line)
+
+                history_manager.is_tracking = toggled_on
+                print(f"{Fore.GREEN}History manager is now {'' if toggled_on else 'NOT '}TRACKING")
+            elif line:
+                self.default(line)
             return
 
         max_log_length = 25
@@ -908,7 +915,7 @@ class RiosCLI(cmd.Cmd):
             print(f"\n{Fore.WHITE}And {len(history_manager.history) - max_log_length} more...")
 
     def complete__history(self, text, line, begidx, endidx):
-        commands = ["reset", "checkout"]
+        commands = ["reset", "checkout", "on", "off"]
         return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
 
     def do__cache(self, line):
