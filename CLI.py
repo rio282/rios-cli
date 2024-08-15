@@ -267,7 +267,7 @@ class RiosCLI(cmd.Cmd):
         else:
             self.do_open(self.script_wd)
 
-    def do_mk(self, filename):
+    def do_mkfile(self, filename):
         """Create a new file in the current directory."""
         filename = filename.strip()
         file_path = os.path.join(self.current_directory, filename)
