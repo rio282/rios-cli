@@ -5,7 +5,7 @@ import shutil
 import sys
 import webbrowser
 from datetime import date, datetime
-from typing import Final, List
+from typing import List
 
 import psutil
 from colorama import init, Fore
@@ -13,7 +13,7 @@ from psutil._common import bytes2human
 from tabulate import tabulate
 
 from etc.pepes import *
-from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred
+from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher
 from games.horse_racing import HorseRace
 from games.slots import Slots
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
@@ -180,8 +180,8 @@ class RiosCLI(cmd.Cmd):
             print(f"Directory '{directory}' does not exist.")
 
     def complete_cd(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
-                                   AutoCompletion.TYPE_DIRECTORIES)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text, AutoCompletion.TYPE_DIRECTORIES)
 
     def do_ls(self, line):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
@@ -203,6 +203,9 @@ class RiosCLI(cmd.Cmd):
 
             perform_matching = parser.is_arg_present("match")
             match_query = parser.get_value_of_arg("match")
+            if perform_matching:
+                FuzzyMatcher.required_matching_score = self.config.config.getint(section="DEFAULT",
+                                                                                 option="search_threshold")
 
             # zip files
             if is_zip_file:
@@ -230,9 +233,10 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
+        del line, begidx, endidx
         matches = AutoCompletion.path(
             self.current_directory,
-            text, line, begidx, endidx,
+            text,
             AutoCompletion.TYPE_DIRECTORIES_AND_ZIP
         )
         arg_matches = AutoCompletion.matches_of(
@@ -254,7 +258,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_open(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text)
 
     def do__owd(self, line):
         """Opens the original working directory. (Add a '?' to display the path)"""
@@ -303,8 +308,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_read(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
-                                   AutoCompletion.TYPE_FILES)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text, AutoCompletion.TYPE_FILES)
 
     def do_copy(self, line):
         """Copies a file or directory (and its contents)."""
@@ -343,7 +348,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_copy(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text)
 
     def do_rm(self, filename):
         """Removes a file or directory."""
@@ -363,7 +369,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_rm(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text)
 
     def do_zip(self, line):
         """Zips a directory."""
@@ -381,7 +388,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_zip(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text)
 
     def do_unzip(self, line):
         """Unzips a directory."""
@@ -402,8 +410,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_unzip(self, text, line, begidx, endidx):
-        return AutoCompletion.path(self.current_directory, text, line, begidx, endidx,
-                                   AutoCompletion.TYPE_FILES)
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text, AutoCompletion.TYPE_FILES)
 
     def do_fart(self, _):
         """Plays fart sound."""
@@ -517,8 +525,9 @@ class RiosCLI(cmd.Cmd):
             self.do_open(episode_file)
 
     def complete_anime(self, text, line, begidx, endidx):
+        del line, begidx, endidx
         subcommands = ["--verbose", "--refresh"]
-        return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
+        return AutoCompletion.matches_of(subcommands, text)
 
     def do_music(self, subcommand):
         """Opens music player. Currently only playlist support."""
@@ -567,8 +576,9 @@ class RiosCLI(cmd.Cmd):
         music_player.play_playlist(playlist)
 
     def complete_music(self, text, line, begidx, endidx):
+        del line, begidx, endidx
         subcommands = ["pause", "stop", "resume", "play", "playing", "visualizer"]
-        return AutoCompletion.matches_of(subcommands, text, line, begidx, endidx)
+        return AutoCompletion.matches_of(subcommands, text)
 
     def do_config(self, _):
         """Opens config editor."""
@@ -621,12 +631,8 @@ class RiosCLI(cmd.Cmd):
 
     def do_time(self, line):
         """Shows current date (along with day of week) and time."""
-        line = line.strip()
-        if not line:
-            line = "now"
-
-        parts = line.strip().split()
-        subcommand = parts[0]
+        parser = CommandArgsParser(line)
+        subcommand = parser.args_raw[0] if parser.args_raw else "now"
 
         try:
             if subcommand == "now":
@@ -638,11 +644,12 @@ class RiosCLI(cmd.Cmd):
                     f"Today's date is {Fore.GREEN}{formatted_date}{Fore.RESET}, it's a {Fore.GREEN}{formatted_day}{Fore.RESET} and it's currently {Fore.GREEN}{formatted_time}{Fore.RESET}."
                 )
             elif subcommand == "wunix":
-                if len(parts) < 2:
+                unix_time_str = parser.get_value_of_arg("wunix")
+                if not unix_time_str:
                     self.default(line)
                     return
 
-                unix_time = int(parts[1])
+                unix_time = int(unix_time_str)
                 dt = datetime.fromtimestamp(unix_time)
                 formatted_date = dt.strftime("%Y-%m-%d")
                 formatted_time = dt.strftime("%H:%M:%S")
@@ -657,8 +664,9 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_time(self, text, line, begidx, endidx):
+        del line, begidx, endidx
         commands = ["now", "wunix"]
-        return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
+        return AutoCompletion.matches_of(commands, text)
 
     def do_volume(self, line):
         """Adjusts volume for windows."""
@@ -812,7 +820,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(yeah_we_messed_up)
 
     def complete_horserace(self, text, line, begidx, endidx):
-        return AutoCompletion.matches_of(["--silent"], text, line, begidx, endidx)
+        del line, begidx, endidx
+        return AutoCompletion.matches_of(["--silent"], text)
 
     def do_slots(self, _):
         slots = Slots()
@@ -915,8 +924,9 @@ class RiosCLI(cmd.Cmd):
             print(f"\n{Fore.WHITE}And {len(history_manager.history) - max_log_length} more...")
 
     def complete__history(self, text, line, begidx, endidx):
+        del line, begidx, endidx
         commands = ["reset", "checkout", "on", "off"]
-        return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
+        return AutoCompletion.matches_of(commands, text)
 
     def do__cache(self, line):
         """Allows you to inspect the cache of certain commands."""
@@ -960,6 +970,7 @@ class RiosCLI(cmd.Cmd):
         TextPane.display(stringified_content, title=command_file.upper(), show_lines_in_title=True)
 
     def complete__cache(self, text, line, begidx, endidx):
+        del line, begidx, endidx
         commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
         commands.append("--force-postloop-now")
-        return AutoCompletion.matches_of(commands, text, line, begidx, endidx)
+        return AutoCompletion.matches_of(commands, text)

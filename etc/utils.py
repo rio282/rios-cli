@@ -1,8 +1,9 @@
+import enum
 import os
 import re
 import threading
 from enum import auto
-from typing import List, Any
+from typing import List, Any, Final, Optional
 
 from fuzzywuzzy import process, fuzz
 from playsound import playsound
@@ -69,30 +70,32 @@ def playsound_deferred(sound_file: str) -> None:
 
 
 class FuzzyMatcher:
-    @staticmethod
-    def top(input_str: str, potential_matches: List[str], top_size: int = 1) -> List[str]:
-        matches = process.extract(input_str, potential_matches, limit=top_size)
-        return [match[0] for match in matches]
+    RECOMMENDED_MATCHING_SCORE: Final[int] = 85
+    required_matching_score: int = 50
 
     @staticmethod
-    def any_matches(input_str: str, potential_matches: List[str]) -> List[str]:
-        matches = process.extract(input_str, potential_matches)
-        return [match[0] for match in matches if match[1] > 0]
+    def _fuzzy_formatter(tokens: List[str]) -> List[str]:
+        return [t[0] for t in tokens]
+
+    @staticmethod
+    def any_matches(matching_token: str, tokens: List[str], limit: Optional[int] = None) -> List[str]:
+        cutoff = limit if limit else FuzzyMatcher.required_matching_score
+        matches = process.extractBests(matching_token, tokens, limit=len(tokens), score_cutoff=cutoff)
+        return FuzzyMatcher._fuzzy_formatter(matches)
 
 
 class AutoCompletion:
-    TYPE_ALL = auto()
-    TYPE_DIRECTORIES = auto()
-    TYPE_DIRECTORIES_AND_ZIP = auto()
-    TYPE_FILES = auto()
+    TYPE_ALL: Final[enum.auto] = auto()
+    TYPE_DIRECTORIES: Final[enum.auto] = auto()
+    TYPE_DIRECTORIES_AND_ZIP: Final[enum.auto] = auto()
+    TYPE_FILES: Final[enum.auto] = auto()
 
-    MODE_STARTSWITH = auto()
-    MODE_PARTIAL = auto()
-    MODE_MATCH_ANY = auto()
+    MODE_STARTSWITH: Final[enum.auto] = auto()
+    MODE_PARTIAL: Final[enum.auto] = auto()
+    MODE_MATCH_ANY: Final[enum.auto] = auto()
 
     @staticmethod
-    def path(current_directory: str, text: str, line: str, begidx: int, endidx: int,
-             completion_type=TYPE_ALL) -> List[str]:
+    def path(current_directory: str, text: str, completion_type=TYPE_ALL) -> List[str]:
         if not text:
             completion = os.listdir(current_directory)
         else:
@@ -111,8 +114,7 @@ class AutoCompletion:
         return completion
 
     @staticmethod
-    def matches_of(possible_matches: List[str], text: str, line: str = None, begidx: int = None, endidx: int = None,
-                   completion_mode=MODE_STARTSWITH) -> List[str]:
+    def matches_of(possible_matches: List[str], text: str, completion_mode=MODE_STARTSWITH) -> List[str]:
         if not text:
             return possible_matches
 
