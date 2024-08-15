@@ -15,7 +15,6 @@ from tabulate import tabulate
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher
 from games.horse_racing import HorseRace
-from games.slots import Slots
 from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
     history_manager, cache_directory
 from services.cursive.display import TextPane, MusicVisualizer
@@ -740,6 +739,7 @@ class RiosCLI(cmd.Cmd):
         )
 
     def do_netstat(self, _):
+        """Some network statistics."""
         connections = psutil.net_connections(kind="inet")
         rows = []
 
@@ -816,10 +816,6 @@ class RiosCLI(cmd.Cmd):
     def complete_horserace(self, text, line, begidx, endidx):
         del line, begidx, endidx
         return AutoCompletion.matches_of(["--silent"], text)
-
-    def do_slots(self, _):
-        slots = Slots()
-        slots.play()
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
