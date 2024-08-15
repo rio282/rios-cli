@@ -768,11 +768,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_com(self, line):
         """Allows interaction with COM port(s)."""
-        if line:
-            subcommand = line
-        else:
-            subcommand = ListMenu.spawn(["Scan"])
-
+        subcommand = line if line else ListMenu.spawn(["Scan"])
         if not subcommand:
             return
 
@@ -789,19 +785,17 @@ class RiosCLI(cmd.Cmd):
 
     def do_horserace(self, line):
         """Horse races! Parameter can set the amount of horses (default=5)."""
-        no_sound = False
-        if "--silent" in line:
-            line = line.replace("--silent", "")
-            no_sound = True
+        parser = CommandArgsParser(line)
+        no_sound = parser.is_arg_present("silent")
+        horses_count_str = parser.get_value_of_arg("horses")
 
-        line = line.strip()
-        if line == "":
-            horses_count = 5
-        elif not is_integer(line):
+        if not horses_count_str:
+            horses_count = 5  # default number of horses
+        elif not is_integer(horses_count_str):
             self.default(line)
             return
         else:
-            horses_count = int(line)
+            horses_count = int(horses_count_str)
 
         try:
             race = HorseRace(horses_count)
