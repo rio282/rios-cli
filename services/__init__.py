@@ -1,8 +1,9 @@
 import os
 from typing import Final
 
-from .osys import COMService, ProcessManager, StatisticsService
+from .osys import COMService, ProcessManager
 from .osys.fs import FileSystem
+from .osys.info import SysInfo
 from .search.web import DuckDuckGoSearcher, WebSearcher
 from .search.local import LocalSearcher
 from .internal.history import HistoryManager
@@ -13,7 +14,7 @@ if not os.path.exists(cache_directory):
 
 file_system = FileSystem(cache_directory)
 processes = ProcessManager()
-statistics = StatisticsService()
+sysinfo = SysInfo()
 com = COMService()
 local_searcher = LocalSearcher(cache_dir=cache_directory)
 web_searcher = DuckDuckGoSearcher(cache_dir=cache_directory,

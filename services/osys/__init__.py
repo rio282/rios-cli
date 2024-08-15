@@ -78,16 +78,6 @@ class ProcessManager:
         return killed
 
 
-class StatisticsService:
-    @property
-    def all(self):
-        return {
-            "cpu_percent": psutil.cpu_percent(interval=1),
-            "memory_info": psutil.virtual_memory(),
-            "disk_usage": psutil.disk_usage("/")
-        }
-
-
 class AudioService:
     @staticmethod
     def set_volume_to(new_volume_level: int) -> None:

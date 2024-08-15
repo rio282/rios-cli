@@ -15,7 +15,7 @@ from tabulate import tabulate
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher
 from games.horse_racing import HorseRace
-from services import youtube, anime, file_system, com, processes, statistics, web_searcher, local_searcher, \
+from services import youtube, anime, file_system, com, processes, sysinfo, web_searcher, local_searcher, \
     history_manager, cache_directory
 from services.cursive.display import TextPane, MusicVisualizer
 from services.cursive.input import ListMenu, SliderMenu, InputMenu
@@ -24,6 +24,7 @@ from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
 from services.osys.fs import File
+from services.osys.info import InfoDisplayer
 
 intro_logo: Final[str] = Fore.GREEN + r"""
                                                       ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
@@ -703,40 +704,9 @@ class RiosCLI(cmd.Cmd):
 
         self.default(subcommands)
 
-    def do_ustats(self, _):
-        """Usage statistics."""
-        # *** should instead use tabulate, but i spent too long on it...
-
-        stats = statistics.all
-        align_length = 20
-
-        cpu_usage = f"{stats['cpu_percent']:.1f}%"
-        memory_usage = f"{stats['memory_info'].percent:.1f}%"
-        disk_usage = f"{stats['disk_usage'].percent:.1f}%"
-
-        memory_used = f"{bytes2human(stats['memory_info'].used)} / {bytes2human(stats['memory_info'].total)}"
-        memory_free = f"{bytes2human(stats['memory_info'].free)}"
-
-        disk_used = f"{bytes2human(stats['disk_usage'].used)} / {bytes2human(stats['disk_usage'].total)}"
-        disk_free = f"{bytes2human(stats['disk_usage'].free)}"
-
-        print()
-        print(
-            Fore.WHITE +
-            f"{''.ljust(8)} {'CPU'.ljust(align_length)} {'Memory'.ljust(align_length)} {'Disk'.ljust(align_length)}"
-        )
-        print(
-            Fore.WHITE +
-            f"{'Usage:'.rjust(8)}{Fore.RESET} {cpu_usage.ljust(align_length)} {memory_usage.ljust(align_length)} {disk_usage.ljust(align_length)}"
-        )
-        print(
-            Fore.WHITE +
-            f"{'Used:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_used.ljust(align_length)} {disk_used.ljust(align_length)}"
-        )
-        print(
-            Fore.WHITE +
-            f"{'Free:'.rjust(8)}{Fore.RESET} {''.ljust(align_length)} {memory_free.ljust(align_length)} {disk_free.ljust(align_length)}"
-        )
+    def do_sysinfo(self, _):
+        """Device statistics."""
+        InfoDisplayer.display_sysload()
 
     def do_netstat(self, _):
         """Some network statistics."""
