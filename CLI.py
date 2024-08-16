@@ -18,6 +18,7 @@ from services import youtube, anime, file_system, com, processes, web_searcher, 
     history_manager, cache_directory
 from services.cursive.display import TextPane, MusicVisualizer
 from services.cursive.input import ListMenu, SliderMenu, InputMenu
+from services.inet import Server
 from services.internal import SerializedEncoder, CommandArgsParser
 from services.internal.config import Config
 from services.music import MusicPlayer, music_player
@@ -820,6 +821,18 @@ class RiosCLI(cmd.Cmd):
             webbrowser.open(selected_result.location, new=0, autoraise=True)
         else:
             self.do_open(selected_result.location)
+
+    def do_server(self, line):
+        parser = CommandArgsParser(line)
+
+        if parser.is_arg_present("host") or not parser.has_args:
+            server = Server()
+            server.start()
+        elif parser.is_arg_present("connect"):
+            server_address = parser.get_value_of_arg("connect")
+            print(f"TODO! {server_address}")
+        else:
+            self.default(line)
 
     def do_clear(self, _):
         """Clears screen."""

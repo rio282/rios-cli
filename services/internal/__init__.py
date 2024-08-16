@@ -56,3 +56,7 @@ class CommandArgsParser:
             return None
 
         return self.args[val]
+
+    @property
+    def has_args(self) -> bool:
+        return len(self.args_raw) > 0
