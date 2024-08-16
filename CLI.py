@@ -9,13 +9,12 @@ from typing import List
 
 import psutil
 from colorama import init, Fore
-from psutil._common import bytes2human
 from tabulate import tabulate
 
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher
 from games.horse_racing import HorseRace
-from services import youtube, anime, file_system, com, processes, sysinfo, web_searcher, local_searcher, \
+from services import youtube, anime, file_system, com, processes, web_searcher, local_searcher, \
     history_manager, cache_directory
 from services.cursive.display import TextPane, MusicVisualizer
 from services.cursive.input import ListMenu, SliderMenu, InputMenu
@@ -24,7 +23,7 @@ from services.internal.config import Config
 from services.music import MusicPlayer, music_player
 from services.osys import AudioService
 from services.osys.fs import File
-from services.osys.info import InfoDisplayer
+from services.osys.info import display_sysinfo
 
 intro_logo: Final[str] = Fore.GREEN + r"""
                                                       ⠀⠀       ⠀⠀⠀  ⣀⣤⡤⠀⠀⠀
@@ -706,7 +705,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_sysinfo(self, _):
         """Device statistics."""
-        InfoDisplayer.display_sysload()
+        display_sysinfo()
 
     def do_netstat(self, _):
         """Some network statistics."""
@@ -785,7 +784,7 @@ class RiosCLI(cmd.Cmd):
 
     def complete_horserace(self, text, line, begidx, endidx):
         del line, begidx, endidx
-        return AutoCompletion.matches_of(["--silent"], text)
+        return AutoCompletion.matches_of(["--silent", "horses <amount>"], text)
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
