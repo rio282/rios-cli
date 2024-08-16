@@ -113,7 +113,7 @@ def display_sysinfo() -> None:
                 rows = [(key_to_name_formatter(key), value) for key, value in info.items()]
                 tables += tabulate(rows, tablefmt="outline")
             elif isinstance(info, str):  # -- means an error has occurred
-                tables += f"Unavailable, reason: {Fore.RED}{info}{Fore.RESET}\n"
+                tables += f"  + Unavailable, reason: {Fore.RED}{info}{Fore.RESET}\n"
             else:
                 raise AttributeError(f"Attribute '{info}' must be of type <dict> or <str>")
 
