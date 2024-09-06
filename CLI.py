@@ -844,6 +844,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_alias(self, line):
         """Creates an alias for a command. Usage: 'alias <command> <alias-for-command>'"""
+        # TODO: make persistent by creating a alias.map file in the .config folder
         try:
             args = line.split()
             if len(args) != 2:
@@ -851,6 +852,7 @@ class RiosCLI(cmd.Cmd):
 
             command, alias = args
             commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+
             if command not in commands:
                 raise NameError(f"Couldn't create alias. Command '{command}' does not exist.'")
             if alias in commands:
