@@ -852,7 +852,9 @@ class RiosCLI(cmd.Cmd):
             command, alias = args
             commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
             if command not in commands:
-                raise NameError(f"Couldn't create alias. Command '{command}' not found.'")
+                raise NameError(f"Couldn't create alias. Command '{command}' does not exist.'")
+            if alias in commands:
+                raise NameError(f"Couldn't create alias. Command with name '{alias}' already exists.")
 
             self.alias_map[command].append(alias)
         except Exception as e:
