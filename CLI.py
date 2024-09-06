@@ -5,7 +5,7 @@ import shutil
 import sys
 import webbrowser
 from datetime import date, datetime
-from typing import List
+from typing import List, Dict
 
 import psutil
 from colorama import init, Fore
@@ -56,6 +56,7 @@ class RiosCLI(cmd.Cmd):
 
         # cli setup
         self.clear_command: Final[str] = "cls"
+        self.alias_map: Dict[str, List[str]] = {}
 
         # paths
         self.script_wd: Final[str] = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +71,7 @@ class RiosCLI(cmd.Cmd):
 
         os.system(f"title Rio's CLI -- {date.today()}")
 
-    def __change_prompt_prefix_to(self, prefix: str = ""):
+    def __change_prompt_prefix(self, prefix: str = ""):
         users_directory = "C:\\Users\\"
         user_home_directory = os.path.abspath(os.path.expanduser("~/Desktop"))
 
@@ -137,6 +138,10 @@ class RiosCLI(cmd.Cmd):
         anime.lookup.load()
         history_manager.load()
 
+        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+        for command in commands:
+            self.alias_map[command] = []
+
     def postloop(self):
         file_system.save()
         local_searcher.save()
@@ -146,6 +151,19 @@ class RiosCLI(cmd.Cmd):
 
     def emptyline(self):
         pass
+
+    def default(self, line):
+        possible_alias, args, _ = self.parseline(line)
+        for command, alias_list in self.alias_map.items():
+            if possible_alias in alias_list:
+                try:
+                    func = getattr(self, f"do_{command}")
+                    return func(args)
+                except AttributeError as e:
+                    self.__on_error(e)
+                    break
+
+        self.stdout.write(f"*** Unknown syntax: {line}\n")
 
     def do_hello(self, name):
         """Replies with 'Hi!' or 'Hello <name>!'"""
@@ -175,7 +193,7 @@ class RiosCLI(cmd.Cmd):
             self.current_directory = new_dir
             os.chdir(self.current_directory)
             print(f"Changed directory to {self.current_directory}")
-            self.__change_prompt_prefix_to(new_dir)
+            self.__change_prompt_prefix(new_dir)
         else:
             print(f"Directory '{directory}' does not exist.")
 
@@ -240,7 +258,7 @@ class RiosCLI(cmd.Cmd):
             AutoCompletion.TYPE_DIRECTORIES_AND_ZIP
         )
         arg_matches = AutoCompletion.matches_of(
-            ["--cache", "--chashes", "--file", "--files", "--dir", "--dirs", "--match"],
+            ["--cache", "--chashes", "--file", "--files", "--dir", "--dirs", "--match <query>"],
             text
         )
 
@@ -313,17 +331,19 @@ class RiosCLI(cmd.Cmd):
 
     def do_copy(self, line):
         """Copies a file or directory (and its contents)."""
+        # TODO: fix spaces bug
+
         line = line.split()
         if len(line) > 2:
             print(f"{Fore.RED}More than two arguments were found, they were ignored.")
 
-        item_to_be_copied = os.path.join(self.current_directory, line[0])
-        destination = os.path.join(self.current_directory, line[1])
+        item_to_be_copied = file_system.clean_directory(os.path.join(self.current_directory, line[0]))
+        destination = file_system.clean_directory(os.path.join(self.current_directory, line[1]))
 
         try:
             # verify that both locations exist
             if not os.path.exists(item_to_be_copied):
-                raise FileNotFoundError(f"File '{item_to_be_copied}' not found.")
+                raise FileNotFoundError(f"Source '{item_to_be_copied}' not found.")
             if not os.path.exists(destination):
                 raise FileNotFoundError(f"Destination '{destination}' not found.")
 
@@ -343,7 +363,7 @@ class RiosCLI(cmd.Cmd):
         except FileExistsError as e:
             print(f"{Fore.RED}File already exists in this directory.")
         except (FileNotFoundError, NotADirectoryError) as e:
-            print(f"{Fore.RED}Not found. {e}")
+            print(f"{Fore.RED}Not found: {e}")
         except Exception as e:
             self.__on_error(e)
 
@@ -822,14 +842,39 @@ class RiosCLI(cmd.Cmd):
         else:
             self.do_open(selected_result.location)
 
+    def do_alias(self, line):
+        """Creates an alias for a command. Usage: 'alias <command> <alias-for-command>'"""
+        try:
+            args = line.split()
+            if len(args) != 2:
+                raise Exception("Incorrect format. Usage: 'alias <command> <alias-for-command>'")
+
+            command, alias = args
+            commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+            if command not in commands:
+                raise NameError(f"Couldn't create alias. Command '{command}' not found.'")
+
+            self.alias_map[command].append(alias)
+        except Exception as e:
+            self.__on_error(e)
+
+    def complete_alias(self, text, line, begidx, endidx):
+        del line, begidx, endidx
+        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+        return AutoCompletion.matches_of(commands, text)
+
     def do_server(self, line):
         parser = CommandArgsParser(line)
 
-        if parser.is_arg_present("host") or not parser.has_args:
+        if not parser.has_args or parser.is_arg_present("host"):
             server = Server()
             server.start()
         elif parser.is_arg_present("connect"):
             server_address = parser.get_value_of_arg("connect")
+            if not server_address:
+                print(f"{Fore.RED}Server address missing!")
+                return
+
             print(f"TODO! {server_address}")
         else:
             self.default(line)

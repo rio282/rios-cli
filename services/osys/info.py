@@ -20,7 +20,7 @@ class SysInfo:
                 "cpu_cores_(available)": f"{psutil.cpu_count(logical=False)}/{psutil.cpu_count(logical=True)}",
                 "cpu_used_percentage": f"{psutil.cpu_percent(interval=1)}%",
                 "memory_used": f"{bytes2human(mem.used)}/{bytes2human(mem.total)} ({mem.percent:.1f}%)",
-                "disk_used": f"{bytes2human(mem.used)}/{bytes2human(mem.total)} ({disk.percent:.1f}%)",
+                "disk_used": f"{bytes2human(disk.used)}/{bytes2human(disk.total)} ({disk.percent:.1f}%)",
                 "registered_partitions": " ".join([p.mountpoint for p in psutil.disk_partitions()])
             }
 
