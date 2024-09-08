@@ -2,6 +2,7 @@ import cmd
 import json
 import os
 import shutil
+import subprocess
 import sys
 import webbrowser
 from datetime import date, datetime
@@ -57,6 +58,8 @@ class RiosCLI(cmd.Cmd):
         # cli setup
         self.clear_command: Final[str] = "cls"
         self.alias_map: Dict[str, List[str]] = {}
+        self.existing_commands: Final[List[str]] = [name.removeprefix("do_") for name in self.get_names() if
+                                                    name.startswith("do_")]
 
         # paths
         self.script_wd: Final[str] = os.path.dirname(os.path.abspath(__file__))
@@ -138,8 +141,7 @@ class RiosCLI(cmd.Cmd):
         anime.lookup.load()
         history_manager.load()
 
-        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
-        for command in commands:
+        for command in self.existing_commands:
             self.alias_map[command] = []
 
     def postloop(self):
@@ -164,6 +166,12 @@ class RiosCLI(cmd.Cmd):
                     break
 
         self.stdout.write(f"*** Unknown syntax: {line}\n")
+
+    def do_shell(self, line):
+        """Allows shell commands to be run, output will be displayed afterwards. Usage: 'shell <command>' or '!<command>'"""
+        output = subprocess.getoutput(line.strip())
+        for _line in output.splitlines():
+            print(f"{Fore.LIGHTBLACK_EX}[SYSOUT]{Fore.RESET} {_line}")
 
     def do_hello(self, name):
         """Replies with 'Hi!' or 'Hello <name>!'"""
@@ -851,12 +859,10 @@ class RiosCLI(cmd.Cmd):
                 raise Exception("Incorrect format. Usage: 'alias <command> <alias-for-command>'")
 
             command, alias = args
-            commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
-
-            if command not in commands:
+            if command not in self.existing_commands:
                 raise NameError(f"Couldn't create alias. Command '{command}' does not exist.'")
-            if alias in commands:
-                raise NameError(f"Couldn't create alias. Command with name '{alias}' already exists.")
+            if alias in self.existing_commands:
+                raise NameError(f"Couldn't create alias. Command with alias '{alias}' already exists.")
 
             self.alias_map[command].append(alias)
         except Exception as e:
@@ -864,8 +870,7 @@ class RiosCLI(cmd.Cmd):
 
     def complete_alias(self, text, line, begidx, endidx):
         del line, begidx, endidx
-        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
-        return AutoCompletion.matches_of(commands, text)
+        return AutoCompletion.matches_of(self.existing_commands, text)
 
     def do_server(self, line):
         parser = CommandArgsParser(line)
@@ -933,10 +938,14 @@ class RiosCLI(cmd.Cmd):
             return
 
         max_log_length = 25
-        valid_commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
         for record in history_manager.history[::-1][:min(max_log_length, len(history_manager.history))]:
+            command_color = Fore.RED
+            if record.command in self.existing_commands:
+                command_color = Fore.GREEN
+            elif record.command.startswith("!") or record.command.startswith("?"):
+                command_color = Fore.LIGHTGREEN_EX
+
             timestamp = f"{Fore.LIGHTBLACK_EX}{int(record.timestamp.timestamp())}{Fore.RESET}"
-            command_color = Fore.GREEN if record.command in valid_commands else Fore.RED
             command = f"{command_color}{record.command}{Fore.RESET}"
             subcommands = f"{Fore.LIGHTGREEN_EX}{' '.join(record.subcommands).strip()}{Fore.RESET}"
             print(timestamp, command, subcommands)
@@ -957,19 +966,17 @@ class RiosCLI(cmd.Cmd):
             print(f"{Fore.GREEN}Complete!")
             return
 
-        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
-
         # get valid command files
         command_files = []
         for file in os.listdir(cache_directory):
             filename = os.path.splitext(file)[0]
-            if filename in commands:
+            if filename in self.existing_commands:
                 command_files.append(file)
 
         # pick a command file
         if line:
             command = line.strip()
-            if command not in commands:
+            if command not in self.existing_commands:
                 self.default(line)
                 return
 
@@ -992,6 +999,6 @@ class RiosCLI(cmd.Cmd):
 
     def complete__cache(self, text, line, begidx, endidx):
         del line, begidx, endidx
-        commands = [name.removeprefix("do_") for name in self.get_names() if name.startswith("do_")]
+        commands = self.existing_commands.copy()
         commands.append("--force-postloop-now")
         return AutoCompletion.matches_of(commands, text)
