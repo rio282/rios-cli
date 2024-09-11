@@ -60,6 +60,7 @@ class RiosCLI(cmd.Cmd):
         self.alias_map: Dict[str, List[str]] = {}
         self.existing_commands: Final[List[str]] = [name.removeprefix("do_") for name in self.get_names() if
                                                     name.startswith("do_")]
+        self.admin_mode_enabled: Final[bool] = False
 
         # paths
         self.script_wd: Final[str] = os.path.dirname(os.path.abspath(__file__))
@@ -127,6 +128,14 @@ class RiosCLI(cmd.Cmd):
         print(*[f"{Fore.LIGHTBLACK_EX}{directory}" if directory.startswith(".") else directory for directory in
                 directories], sep="\n")
 
+    def precmd(self, line):
+        is_admin_command = line.lstrip().startswith("_")
+        if is_admin_command and not self.admin_mode_enabled:
+            print(f"{Fore.LIGHTBLACK_EX}Command ignored.")
+            return ""
+
+        return line
+
     def postcmd(self, stop, line):
         if line.strip() != "":
             print()  # add empty line for better readability
@@ -153,6 +162,61 @@ class RiosCLI(cmd.Cmd):
 
     def emptyline(self):
         pass
+
+    def do_help(self, arg):
+        """List available commands with 'help' or detailed help with 'help cmd'."""
+        if arg:
+            # XXX check arg syntax
+            try:
+                func = getattr(self, "help_" + arg)
+            except AttributeError:
+                try:
+                    doc = getattr(self, "do_" + arg).__doc__
+                    if doc:
+                        self.stdout.write("%s\n" % str(doc))
+                        return
+                except AttributeError:
+                    pass
+                self.stdout.write("%s\n" % str(self.nohelp % (arg,)))
+                return
+            func()
+        else:
+            names = [name for name in self.get_names()]
+            cmds_doc = []
+            cmds_undoc = []
+            topics = set()
+            for name in names:
+                if name[:5] == "help_":
+                    topics.add(name[5:])
+            names.sort()
+            # There can be duplicates if routines overridden
+            prevname = ""
+            for name in names:
+                if not self.admin_mode_enabled and name[:4] == "do__":
+                    continue
+                if name[:3] == "do_":
+                    if name == prevname:
+                        continue
+                    prevname = name
+                    cmd = name[3:]
+                    if cmd in topics:
+                        cmds_doc.append(cmd)
+                        topics.remove(cmd)
+                    elif getattr(self, name).__doc__:
+                        cmds_doc.append(cmd)
+                    else:
+                        cmds_undoc.append(cmd)
+
+            self.stdout.write("%s\n" % str(self.doc_leader))
+            self.print_topics(self.doc_header, cmds_doc, 15, 80)
+            self.print_topics(self.misc_header, sorted(topics), 15, 80)
+            self.print_topics(self.undoc_header, cmds_undoc, 15, 80)
+
+    def complete_help(self, *args):
+        commands = set(name for name in self.completenames(*args) if not name[0] == "_")
+        topics = set(a[5:] for a in self.get_names()
+                     if a.startswith("help_" + args[0]) and not a.startswith("help__" + args[0]))
+        return list(commands | topics)
 
     def default(self, line):
         possible_alias, args, _ = self.parseline(line)
@@ -851,26 +915,41 @@ class RiosCLI(cmd.Cmd):
             self.do_open(selected_result.location)
 
     def do_alias(self, line):
-        """Creates an alias for a command. Usage: 'alias <command> <alias-for-command>'"""
+        """Creates an alias for a command. Usage: 'alias <add/remove> <command> <alias-for-command>'"""
         # TODO: make persistent by creating a alias.map file in the .config folder
         try:
             args = line.split()
-            if len(args) != 2:
-                raise Exception("Incorrect format. Usage: 'alias <command> <alias-for-command>'")
+            if len(args) != 3:
+                raise Exception("Incorrect format. Usage: 'alias <add/remove> <command> <alias-for-command>'")
 
+            cmd_type = args.pop(0).lower()
             command, alias = args
-            if command not in self.existing_commands:
-                raise NameError(f"Couldn't create alias. Command '{command}' does not exist.'")
-            if alias in self.existing_commands:
-                raise NameError(f"Couldn't create alias. Command with alias '{alias}' already exists.")
+            if cmd_type == "add":
+                if command not in self.existing_commands:
+                    raise NameError(f"Couldn't create alias. Command '{command}' does not exist.'")
+                if alias in self.existing_commands:
+                    raise NameError(f"Couldn't create alias. Command with alias '{alias}' already exists.")
 
-            self.alias_map[command].append(alias)
+                self.alias_map[command].append(alias)
+            elif cmd_type == "remove":
+                if command not in self.existing_commands:
+                    raise NameError(f"Couldn't remove alias. Command '{command}' does not exist.'")
+                if alias not in self.alias_map[command]:
+                    raise NameError(f"Alias '{alias}' not found for command '{command}'.")
+
+                self.alias_map[command].remove(alias)
+            else:
+                self.default(line)
+        except NameError as ne:
+            print(f"{Fore.RED}{ne}")
         except Exception as e:
             self.__on_error(e)
 
     def complete_alias(self, text, line, begidx, endidx):
         del line, begidx, endidx
-        return AutoCompletion.matches_of(self.existing_commands, text)
+        commands = self.existing_commands.copy()
+        commands.extend(["add", "remove"])
+        return AutoCompletion.matches_of(commands, text)
 
     def do_server(self, line):
         parser = CommandArgsParser(line)
