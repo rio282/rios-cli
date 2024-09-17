@@ -90,8 +90,6 @@ def main(argc: int, argv: argparse.Namespace) -> None:
         # clear & start
         os.system(cli.clear_command)
         cli.cmdloop()
-    except KeyboardInterrupt:
-        print("\nExit via KeyboardInterrupt (CTRL+C).")
     except Exception as ex:
         raise ex
     finally:

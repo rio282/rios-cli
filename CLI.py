@@ -685,6 +685,7 @@ class RiosCLI(cmd.Cmd):
             elif subcommand == "playing":
                 print(f"{Fore.GREEN}Currently playing: {Fore.WHITE}{music_player.now_playing.name}")
             elif subcommand == "visualizer":
+                # TODO
                 print("Experimental, not ready for use... ")
 
                 visualizer = MusicVisualizer()
