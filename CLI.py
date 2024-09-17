@@ -60,7 +60,7 @@ class RiosCLI(cmd.Cmd):
         self.alias_map: Dict[str, List[str]] = {}
         self.existing_commands: Final[List[str]] = [name.removeprefix("do_") for name in self.get_names() if
                                                     name.startswith("do_")]
-        self.admin_mode_enabled: Final[bool] = False
+        self.admin_mode_enabled: Final[bool] = True
 
         # paths
         self.script_wd: Final[str] = os.path.dirname(os.path.abspath(__file__))
@@ -159,6 +159,12 @@ class RiosCLI(cmd.Cmd):
         web_searcher.save()
         anime.lookup.save()
         history_manager.save()
+
+    def cmdloop(self, intro=None):
+        try:
+            super().cmdloop(intro)
+        except KeyboardInterrupt:
+            sys.stdout.write("\n")
 
     def emptyline(self):
         pass
@@ -260,7 +266,7 @@ class RiosCLI(cmd.Cmd):
         elif directory == "..":
             directory = os.path.dirname(self.current_directory)
 
-        new_dir = file_system.clean_directory(directory)
+        new_dir = file_system.clean_path(directory)
         if os.path.exists(new_dir) and os.path.isdir(new_dir):
             self.current_directory = new_dir
             os.chdir(self.current_directory)
@@ -276,7 +282,7 @@ class RiosCLI(cmd.Cmd):
     def do_ls(self, line):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
         try:
-            directory = file_system.clean_directory(line, filter_args=True)
+            directory = file_system.clean_path(line, filter_args=True)
             is_zip_file = os.path.isfile(directory) and os.path.splitext(directory)[1] == ".zip"
 
             # parse args
@@ -407,10 +413,10 @@ class RiosCLI(cmd.Cmd):
 
         line = line.split()
         if len(line) > 2:
-            print(f"{Fore.RED}More than two arguments were found, they were ignored.")
+            print(f"{Fore.RED}Warning: More than two arguments were found, they were ignored.")
 
-        item_to_be_copied = file_system.clean_directory(os.path.join(self.current_directory, line[0]))
-        destination = file_system.clean_directory(os.path.join(self.current_directory, line[1]))
+        item_to_be_copied = file_system.clean_path(line[0])
+        destination = file_system.clean_path(line[1])
 
         try:
             # verify that both locations exist
@@ -443,6 +449,49 @@ class RiosCLI(cmd.Cmd):
         del line, begidx, endidx
         return AutoCompletion.path(self.current_directory, text)
 
+    def do_move(self, line):
+        """Moves a file or directory (and its contents)."""
+        # TODO: fix spaces bug
+
+        line = line.split()
+        if len(line) > 2:
+            print(f"{Fore.RED}Warning: More than two arguments were found, they were ignored.")
+
+        item_to_be_copied = file_system.clean_path(line[0])
+        destination = file_system.clean_path(line[1])
+
+        try:
+            # verify that both locations exist
+            if not os.path.exists(item_to_be_copied):
+                raise FileNotFoundError(f"Source '{item_to_be_copied}' not found.")
+            if not os.path.exists(destination):
+                raise FileNotFoundError(f"Destination '{destination}' not found.")
+
+            # check if destination is an existing directory
+            if os.path.isfile(destination):
+                raise NotADirectoryError("Destination argument should be a directory, not a file.")
+
+            # verify type before moving
+            print(f"Moving...")
+            if os.path.isdir(item_to_be_copied):
+                for entry in os.listdir(item_to_be_copied):
+                    shutil.move(os.path.join(item_to_be_copied, entry), destination)
+            else:
+                shutil.move(item_to_be_copied, destination)
+            print(f"Moved: {item_to_be_copied} to {destination}")
+        except PermissionError as e:
+            print(f"{Fore.RED}Permission denied.")
+        except FileExistsError as e:
+            print(f"{Fore.RED}File already exists in this directory.")
+        except (FileNotFoundError, NotADirectoryError) as e:
+            print(f"{Fore.RED}Not found: {e}")
+        except Exception as e:
+            self.__on_error(e)
+
+    def complete_move(self, text, line, begidx, endidx):
+        del line, begidx, endidx
+        return AutoCompletion.path(self.current_directory, text)
+
     def do_rm(self, filename):
         """Removes a file or directory."""
         file_path = os.path.join(self.current_directory, filename)
@@ -466,7 +515,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_zip(self, line):
         """Zips a directory."""
-        directory = file_system.clean_directory(line, filter_args=True)
+        directory = file_system.clean_path(line, filter_args=True)
         parser = CommandArgsParser(line)
 
         try:
@@ -485,7 +534,7 @@ class RiosCLI(cmd.Cmd):
 
     def do_unzip(self, line):
         """Unzips a directory."""
-        zip_file = file_system.clean_directory(line, filter_args=True)
+        zip_file = file_system.clean_path(line, filter_args=True)
         parser = CommandArgsParser(line)
 
         try:
@@ -777,7 +826,7 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def do_procs(self, subcommands):
-        """Allows you to interact with certain processes."""
+        """[WARNING: MARKED FOR DELETION] Allows you to interact with certain processes."""
         subcommands = subcommands.split()
         if not subcommands:
             processes.list_processes()
@@ -919,26 +968,38 @@ class RiosCLI(cmd.Cmd):
         # TODO: make persistent by creating a alias.map file in the .config folder
         try:
             args = line.split()
-            if len(args) != 3:
-                raise Exception("Incorrect format. Usage: 'alias <add/remove> <command> <alias-for-command>'")
+            if not args:
+                raise Exception("This command requires an argument.")
 
             cmd_type = args.pop(0).lower()
-            command, alias = args
             if cmd_type == "add":
+                command, alias = args
                 if command not in self.existing_commands:
                     raise NameError(f"Couldn't create alias. Command '{command}' does not exist.'")
                 if alias in self.existing_commands:
                     raise NameError(f"Couldn't create alias. Command with alias '{alias}' already exists.")
+                if alias in self.alias_map[command]:
+                    raise NameError(f"Couldn't create alias. Alias '{alias}' already exists for command '{command}'.")
 
                 self.alias_map[command].append(alias)
             elif cmd_type == "remove":
+                command, alias = args
                 if command not in self.existing_commands:
                     raise NameError(f"Couldn't remove alias. Command '{command}' does not exist.'")
                 if alias not in self.alias_map[command]:
                     raise NameError(f"Alias '{alias}' not found for command '{command}'.")
 
                 self.alias_map[command].remove(alias)
+            elif cmd_type == "list":
+                if len(self.alias_map.keys()) > 0:
+                    headers = ["Command", "Aliases"]
+                    rows = [(_cmd, ", ".join(_aliases)) for _cmd, _aliases in self.alias_map.items()]
+                    print(tabulate(rows, headers=headers, tablefmt="datarow"))
+                else:
+                    print("It's empty.")
             else:
+                if len(args) != 3:
+                    raise Exception("Incorrect format. Usage: 'alias <add/remove> <command> <alias-for-command>'")
                 self.default(line)
         except NameError as ne:
             print(f"{Fore.RED}{ne}")
@@ -948,7 +1009,7 @@ class RiosCLI(cmd.Cmd):
     def complete_alias(self, text, line, begidx, endidx):
         del line, begidx, endidx
         commands = self.existing_commands.copy()
-        commands.extend(["add", "remove"])
+        commands.extend(["add", "remove", "list"])
         return AutoCompletion.matches_of(commands, text)
 
     def do_server(self, line):

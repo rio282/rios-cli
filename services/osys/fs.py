@@ -31,7 +31,7 @@ class FileSystem:
         self.directory_cache: Dict[str, List[str]] = {}
 
     @staticmethod
-    def clean_directory(directory: str, filter_args: bool = False) -> str:
+    def clean_path(directory: str, filter_args: bool = False) -> str:
         """
         Cleans and converts a given directory path to an absolute path, ensuring proper formatting.
 
@@ -133,7 +133,7 @@ class FileSystem:
         :param calc_file_hashes: Calculates the hash value of the file.
         :return: Returns a list of files (class File).
         """
-        directory = self.clean_directory(directory)
+        directory = self.clean_path(directory)
 
         # checks if dir exists
         if directory and not os.path.exists(directory):
@@ -175,7 +175,7 @@ class FileSystem:
         :param use_cache: Makes call use the cache (if available) instead of checking again.
         :return: Returns a list of directories' names.
         """
-        directory = self.clean_directory(directory)
+        directory = self.clean_path(directory)
 
         # checks if dir exists
         if directory and not os.path.exists(directory):
@@ -352,7 +352,7 @@ if __name__ == "__main__":
     ]
 
     for case in test_cases:
-        result = FileSystem.clean_directory(
+        result = FileSystem.clean_path(
             case["input"],
             possible_args=case.get("possible_args"),
             filter_args=case.get("filter_any_args", False)
