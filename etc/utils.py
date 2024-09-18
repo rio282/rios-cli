@@ -69,6 +69,13 @@ def playsound_deferred(sound_file: str) -> None:
     sound_thread.start()
 
 
+def get_latest_existing_path(current_directory: str, line: str) -> str:
+    path = os.path.join(current_directory, "".join(line.split()[1:]))
+    if not os.path.exists(path):
+        path = os.path.dirname(path)
+    return path
+
+
 class FuzzyMatcher:
     RECOMMENDED_MATCHING_SCORE: Final[int] = 85
     required_matching_score: int = 50
@@ -96,22 +103,27 @@ class AutoCompletion:
 
     @staticmethod
     def path(current_directory: str, text: str, completion_type=TYPE_ALL) -> List[str]:
-        if not text:
-            completion = os.listdir(current_directory)
-        else:
-            text_lower = text.lower()
-            completion = [d for d in os.listdir(current_directory) if d.lower().startswith(text_lower)]
+        def path_filter():
+            if not text:
+                completion = os.listdir(current_directory)
+            else:
+                text_lower = text.lower()
+                completion = [d for d in os.listdir(current_directory) if d.lower().startswith(text_lower)]
 
-        if completion_type == AutoCompletion.TYPE_DIRECTORIES:
-            return [d for d in completion if os.path.isdir(os.path.join(current_directory, d))]
-        elif completion_type == AutoCompletion.TYPE_DIRECTORIES_AND_ZIP:
-            return [
-                d for d in completion if os.path.isdir(os.path.join(current_directory, d)) or (
-                        os.path.isfile(os.path.join(current_directory, d)) and os.path.splitext(d)[1] == ".zip")]
-        elif completion_type == AutoCompletion.TYPE_FILES:
-            return [d for d in completion if os.path.isfile(os.path.join(current_directory, d))]
+            if completion_type == AutoCompletion.TYPE_DIRECTORIES:
+                return [d for d in completion if os.path.isdir(os.path.join(current_directory, d))]
+            elif completion_type == AutoCompletion.TYPE_DIRECTORIES_AND_ZIP:
+                return [
+                    d for d in completion if os.path.isdir(os.path.join(current_directory, d)) or (
+                            os.path.isfile(os.path.join(current_directory, d)) and os.path.splitext(d)[1] == ".zip")]
+            elif completion_type == AutoCompletion.TYPE_FILES:
+                return [d for d in completion if os.path.isfile(os.path.join(current_directory, d))]
 
-        return completion
+            return completion
+
+        # TODO: fix this retarded stuff here
+        # return [f"\"{entry}\"" if " " in entry else entry for entry in path_filter()]
+        return path_filter()
 
     @staticmethod
     def matches_of(possible_matches: List[str], text: str, completion_mode=MODE_STARTSWITH) -> List[str]:

@@ -105,6 +105,11 @@ class FileSystem:
             return extension.removeprefix(".")
 
     @staticmethod
+    def get_files_from_string(raw_str: str) -> List[str]:
+        delimiter = "\"" if "\"" in raw_str else " "
+        return [i.lstrip() for i in raw_str.split(delimiter) if i]
+
+    @staticmethod
     def get_file_hash(file: str) -> str:
         """
         Compute and return the XXHash-64 hash of the given file.
@@ -354,7 +359,6 @@ if __name__ == "__main__":
     for case in test_cases:
         result = FileSystem.clean_path(
             case["input"],
-            possible_args=case.get("possible_args"),
             filter_args=case.get("filter_any_args", False)
         )
         assert result == case[

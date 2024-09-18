@@ -13,7 +13,8 @@ from colorama import init, Fore
 from tabulate import tabulate
 
 from etc.pepes import *
-from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher
+from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher, \
+    get_latest_existing_path
 from games.horse_racing import HorseRace
 from services import youtube, anime, file_system, com, processes, web_searcher, local_searcher, \
     history_manager, cache_directory
@@ -167,14 +168,14 @@ class RiosCLI(cmd.Cmd):
                 import readline
                 self.old_completer = readline.get_completer()
                 readline.set_completer(self.complete)
-                readline.parse_and_bind(self.completekey+": complete")
+                readline.parse_and_bind(self.completekey + ": complete")
             except ImportError:
                 pass
         try:
             if intro is not None:
                 self.intro = intro
             if self.intro:
-                self.stdout.write(str(self.intro)+"\n")
+                self.stdout.write(str(self.intro) + "\n")
             stop = None
             while not stop:
                 try:
@@ -319,8 +320,8 @@ class RiosCLI(cmd.Cmd):
             print(f"Directory '{directory}' does not exist.")
 
     def complete_cd(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text, AutoCompletion.TYPE_DIRECTORIES)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text, AutoCompletion.TYPE_DIRECTORIES)
 
     def do_ls(self, line):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
@@ -372,9 +373,9 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_ls(self, text, line, begidx, endidx):
-        del line, begidx, endidx
+        del begidx, endidx
         matches = AutoCompletion.path(
-            self.current_directory,
+            get_latest_existing_path(self.current_directory, line),
             text,
             AutoCompletion.TYPE_DIRECTORIES_AND_ZIP
         )
@@ -397,8 +398,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_open(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
 
     def do__owd(self, line):
         """Opens the original working directory. (Add a '?' to display the path)"""
@@ -447,21 +448,20 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_read(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text, AutoCompletion.TYPE_FILES)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text, AutoCompletion.TYPE_FILES)
 
     def do_copy(self, line):
         """Copies a file or directory (and its contents)."""
-        # TODO: fix spaces bug
-
-        line = line.split()
-        if len(line) > 2:
-            print(f"{Fore.RED}Warning: More than two arguments were found, they were ignored.")
-
-        item_to_be_copied = file_system.clean_path(line[0])
-        destination = file_system.clean_path(line[1])
-
         try:
+            # make sure we select the correct files
+            line = file_system.get_files_from_string(line)
+            if len(line) > 2:
+                print(f"{Fore.RED}Warning: More than two arguments were found, they were ignored.")
+
+            item_to_be_copied = file_system.clean_path(line[0])
+            destination = file_system.clean_path(line[1])
+
             # verify that both locations exist
             if not os.path.exists(item_to_be_copied):
                 raise FileNotFoundError(f"Source '{item_to_be_copied}' not found.")
@@ -489,14 +489,12 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_copy(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text)
+        del begidx, endidx
+        AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
 
     def do_move(self, line):
         """Moves a file or directory (and its contents)."""
-        # TODO: fix spaces bug
-
-        line = line.split()
+        line = file_system.get_files_from_string(line)
         if len(line) > 2:
             print(f"{Fore.RED}Warning: More than two arguments were found, they were ignored.")
 
@@ -532,8 +530,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_move(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
 
     def do_rm(self, filename):
         """Removes a file or directory."""
@@ -553,8 +551,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_rm(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
 
     def do_zip(self, line):
         """Zips a directory."""
@@ -572,8 +570,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_zip(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
 
     def do_unzip(self, line):
         """Unzips a directory."""
@@ -594,8 +592,8 @@ class RiosCLI(cmd.Cmd):
             self.__on_error(e)
 
     def complete_unzip(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.path(self.current_directory, text, AutoCompletion.TYPE_FILES)
+        del begidx, endidx
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text, AutoCompletion.TYPE_FILES)
 
     def do_fart(self, _):
         """Plays fart sound."""
