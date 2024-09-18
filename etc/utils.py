@@ -103,6 +103,10 @@ class AutoCompletion:
 
     @staticmethod
     def path(current_directory: str, text: str, completion_type=TYPE_ALL) -> List[str]:
+        if "~" in current_directory:
+            current_directory = os.path.join(os.path.expanduser("~"),
+                                             current_directory.split("~").pop().removeprefix("\\"))
+
         def path_filter():
             if not text:
                 completion = os.listdir(current_directory)
