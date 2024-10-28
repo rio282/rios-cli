@@ -6,7 +6,7 @@ import subprocess
 import sys
 import webbrowser
 from datetime import date, datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import psutil
 from colorama import init, Fore
@@ -59,20 +59,19 @@ class RiosCLI(cmd.Cmd):
         # cli setup
         self.clear_command: Final[str] = "cls"
         self.alias_map: Dict[str, List[str]] = {}
+        self.config: Optional[Config] = None
         self.existing_commands: Final[List[str]] = [name.removeprefix("do_") for name in self.get_names() if
                                                     name.startswith("do_")]
         self.admin_mode_enabled: Final[bool] = True
 
-        # paths
+        # paths setup
         self.script_wd: Final[str] = os.path.dirname(os.path.abspath(__file__))
         os.chdir(os.path.expanduser("~/Desktop"))
         self.current_directory: str = os.getcwd()
 
-        # load config
-        config_dir = os.path.join(self.script_wd, ".config")
-        self.config = Config(config_dir)
-        if not os.path.exists(self.config.config_file):
-            self.config.create_default_config()
+        # performs many create steps (config related)
+        config_dir: Final[str] = os.path.join(self.script_wd, ".config")
+        self.create(config_dir)
 
         os.system(f"title Rio's CLI -- {date.today()}")
 
@@ -143,6 +142,19 @@ class RiosCLI(cmd.Cmd):
             history_manager.record_line(line)
 
         return stop
+
+    def create(self, config_dir: str):
+        # create config dir
+        os.makedirs(config_dir, exist_ok=True)
+
+        # create config
+        self.config = Config(config_dir)
+        if not os.path.exists(self.config.config_file):
+            self.config.create_default_config()
+
+        # create alias map
+        alias_map_file = os.path.join(self.script_wd, ".config", "alias.map")
+        file_system.abs_create_file(alias_map_file)
 
     def preloop(self):
         file_system.load()
@@ -321,7 +333,13 @@ class RiosCLI(cmd.Cmd):
 
     def complete_cd(self, text, line, begidx, endidx):
         del begidx, endidx
-        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text, AutoCompletion.TYPE_DIRECTORIES)
+        try:
+            return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text,
+                                       AutoCompletion.TYPE_DIRECTORIES)
+        except FileNotFoundError:
+            # TODO: fix (in AutoCompletion.path)
+            # gets raised when reserved namespaces are trying to be read or used
+            return []
 
     def do_ls(self, line):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
@@ -449,7 +467,8 @@ class RiosCLI(cmd.Cmd):
 
     def complete_read(self, text, line, begidx, endidx):
         del begidx, endidx
-        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text, AutoCompletion.TYPE_FILES)
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text,
+                                   AutoCompletion.TYPE_FILES)
 
     def do_copy(self, line):
         """Copies a file or directory (and its contents)."""
@@ -593,7 +612,8 @@ class RiosCLI(cmd.Cmd):
 
     def complete_unzip(self, text, line, begidx, endidx):
         del begidx, endidx
-        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text, AutoCompletion.TYPE_FILES)
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text,
+                                   AutoCompletion.TYPE_FILES)
 
     def do_fart(self, _):
         """Plays fart sound."""
@@ -970,6 +990,9 @@ class RiosCLI(cmd.Cmd):
         del line, begidx, endidx
         return AutoCompletion.matches_of(["--silent", "horses <amount>"], text)
 
+    def do_blackjack(self, line):
+        print("TODO!")
+
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""
         query = query.strip()
@@ -1080,6 +1103,19 @@ class RiosCLI(cmd.Cmd):
         """Exit CLI."""
         return True
 
+    def do_git(self, line):
+        """Parses git commands by passing them on into the shell command."""
+        print("Parsing git to shell...")
+        self.do_shell(f"git {line}")
+
+    def complete_git(self, text, line, begidx, endidx):
+        del line, begidx, endidx
+        commands = ["--version", "--help", "-C <path>", "-c <name>=<value>", "--exec-path=<path>", "--html-path",
+                    "--man-path", "--info-path", "--paginate ", "--no-pager", "--no-replace-objects", "--bare",
+                    "--git-dir=<path>", "--work-tree=<path>", "--namespace=<name>", "--super-prefix=<path>",
+                    "--config-env=<name>=<envvar>", "add", "checkout <branch>", "push origin main"]
+        return AutoCompletion.matches_of(commands, text)
+
     def do_reload(self, line):
         """Reloads/Restarts the CLI."""
         if line == "config":
@@ -1184,3 +1220,18 @@ class RiosCLI(cmd.Cmd):
         commands = self.existing_commands.copy()
         commands.append("--force-postloop-now")
         return AutoCompletion.matches_of(commands, text)
+
+    def do__fix(self, _):
+        option = ListMenu.spawn(["Restart CLI", "Restart Windows Explorer"])
+        if not option:
+            return
+
+        if option == "Restart CLI":
+            self.do_reload("")
+        elif option == "Restart Windows Explorer":
+            print("Killing explorer.exe...")
+            os.system("taskkill /f /im explorer.exe")
+            print("Killed explorer.exe!")
+            print("Restarting...")
+            os.system("start explorer.exe")
+            print("Restarted explorer.exe!")

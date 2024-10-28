@@ -293,6 +293,11 @@ class FileSystem:
         with open(file=file, mode="rb") as f:
             return pickle.load(f)
 
+    def abs_create_file(self, file: str) -> None:
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+        with open(file=file, mode="w") as _:
+            return
+
     def save(self) -> None:
         """
         Saves the cache to a file.
