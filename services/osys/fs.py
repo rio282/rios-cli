@@ -86,13 +86,16 @@ class FileSystem:
         return os.path.realpath(os.path.join(os.getcwd(), directory))
 
     @staticmethod
-    def get_file_type(extension: str) -> str:
+    def get_file_type(extension: str, fallback: str = "") -> str:
         """
         Gets the name/mimetype of the file extension supplied.
 
         :param extension: A file extension
         :return: The name the extension corresponds with in the system
         """
+        if not extension:
+            return fallback
+
         try:
             key = win32api.RegOpenKey(HKEY_CLASSES_ROOT, extension)
             file_type_class, _ = win32api.RegQueryValueEx(key, "")
@@ -106,7 +109,7 @@ class FileSystem:
 
     @staticmethod
     def get_files_from_string(raw_str: str) -> List[str]:
-        delimiter = "\"" if "\"" in raw_str else " "
+        delimiter = "\"" if "\"" in raw_str.replace("'", "\"") else " "
         return [i.lstrip() for i in raw_str.split(delimiter) if i]
 
     @staticmethod

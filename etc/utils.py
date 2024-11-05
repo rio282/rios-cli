@@ -18,7 +18,7 @@ def escape_windows_safe_filename(unsafe: str) -> str:
     return "".join(x for x in unsafe if x.isalnum())
 
 
-def truncate_filename(fn: str, fe: str, max_length: int = 32, character: str = ">") -> str:
+def truncate_filename(fn: str, fe: str, max_length: int = 32, character: str = "#") -> str:
     """
     Truncates filenames safely.
     :param fn: filename

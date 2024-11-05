@@ -92,7 +92,7 @@ class RiosCLI(cmd.Cmd):
     def __on_error(self, error_exception: Exception):
         print(f"{Fore.RED}[!] An error has occurred: {error_exception}")
 
-    def list_files(self, files: List[File]):
+    def list_files(self, files: List[File], display_file_hashes: bool = True):
         print()
         print(f"{Fore.GREEN}Files ({len(files)}):")
 
@@ -100,7 +100,7 @@ class RiosCLI(cmd.Cmd):
             return
 
         table_data = []
-        max_length = 48
+        max_length = 32
 
         for file in files:
             base_name, file_ext = os.path.splitext(file.name)
@@ -110,16 +110,25 @@ class RiosCLI(cmd.Cmd):
                 if file.name.startswith(".") else truncated_name
             file_size_mb_rounded = float(f"{file.size_mb:.2f}")
             file_size_display = f"{Fore.CYAN}{file_size_mb_rounded} MB" if file_size_mb_rounded > 0 else f"{Fore.CYAN}~{file_size_mb_rounded} MB"
-            file_type = file_system.get_file_type(file_ext)
+            file_type = file_system.get_file_type(file_ext, fallback=f"{Fore.LIGHTBLACK_EX}<None>{Fore.RESET}")
             last_updated = datetime.fromtimestamp(file.last_updated).strftime("%Y-%m-%d %H:%M:%S").split()
             last_updated = f"{last_updated[0]} {Fore.LIGHTBLACK_EX}{last_updated[1]}{Fore.RESET}"
 
-            table_data.append([filename_display, file_size_display, file_type, last_updated, file.file_hash])
+            cell_data = [filename_display, file_size_display, file_type, last_updated]
+            if display_file_hashes:
+                cell_data.append(file.file_hash)
+            table_data.append(cell_data)
+
+        headers = [f"{Fore.WHITE}Filename", "Size", "Type", f"Updated{Fore.RESET}"]
+        colalign = ("left", "right", "left", "left")
+        if display_file_hashes:
+            headers = [f"{Fore.WHITE}Filename", "Size", "Type", "Updated", f"Hash{Fore.RESET}"]
+            colalign = ("left", "right", "left", "left", "right")
 
         print(tabulate(
             table_data,
-            headers=[f"{Fore.WHITE}Filename", "Size", "Type", "Updated", f"Hash{Fore.RESET}"],
-            colalign=("left", "right", "left", "left", "right")
+            headers=headers,
+            colalign=colalign
         ))
 
     def list_directories(self, directories: List[str]):
@@ -153,8 +162,9 @@ class RiosCLI(cmd.Cmd):
             self.config.create_default_config()
 
         # create alias map
-        alias_map_file = os.path.join(self.script_wd, ".config", "alias.map")
-        file_system.abs_create_file(alias_map_file)
+        alias_map_file = os.path.join(config_dir, "alias.map")
+        if not os.path.exists(alias_map_file):
+            file_system.abs_create_file(alias_map_file)
 
     def preloop(self):
         file_system.load()
@@ -163,10 +173,30 @@ class RiosCLI(cmd.Cmd):
         anime.lookup.load()
         history_manager.load()
 
+        # TODO: move this
+        # load alias map
+        try:
+            import pickle  # (LC) + TEMP!!
+            with open(file=os.path.join(self.script_wd, ".config", "alias.map"), mode="rb") as f:
+                am_data = pickle.load(f)
+                self.alias_map = am_data.get("alias_map", {})
+        except:
+            pass
+
         for command in self.existing_commands:
-            self.alias_map[command] = []
+            if command not in self.alias_map.keys():
+                self.alias_map[command] = []
 
     def postloop(self):
+        # TODO: move this
+        # save alias map
+        try:
+            import pickle  # TEMP!!
+            with open(file=os.path.join(self.script_wd, ".config", "alias.map"), mode="wb") as f:
+                pickle.dump({"alias_map": self.alias_map}, f)
+        except:
+            pass
+
         file_system.save()
         local_searcher.save()
         web_searcher.save()
@@ -280,6 +310,49 @@ class RiosCLI(cmd.Cmd):
                      if a.startswith("help_" + args[0]) and not a.startswith("help__" + args[0]))
         return list(commands | topics)
 
+    def completenames(self, text, *ignored):
+        dotext = 'do_' + text
+        commands = self.get_names()
+        aliases = [f"do_{b}" for a in self.alias_map.values() for b in a]
+        return [a[3:] for a in commands + aliases if a.startswith(dotext)]
+
+    def complete(self, text, state):
+        """Return the next possible completion for 'text'.
+
+        If a command has not been entered, then complete against command list.
+        """
+        if state == 0:
+            import readline
+
+            origline = readline.get_line_buffer()
+            line = origline.lstrip()
+            stripped = len(origline) - len(line)
+            begidx = readline.get_begidx() - stripped
+            endidx = readline.get_endidx() - stripped
+
+            if begidx > 0:
+                command, args, foo = self.parseline(line)
+                compfunc = self.completedefault
+
+                if command != "":
+                    try:
+                        compfunc = getattr(self, 'complete_' + command)
+                    except AttributeError:
+                        for _command, aliases in self.alias_map.items():
+                            if command in aliases:
+                                compfunc = getattr(self, 'complete_' + _command)
+                                break
+
+            else:
+                compfunc = self.completenames
+
+            self.completion_matches = compfunc(text, line, begidx, endidx)
+
+        try:
+            return self.completion_matches[state]
+        except IndexError:
+            return None
+
     def default(self, line):
         possible_alias, args, _ = self.parseline(line)
         for command, alias_list in self.alias_map.items():
@@ -371,7 +444,7 @@ class RiosCLI(cmd.Cmd):
                 if print_dirs:
                     self.list_directories(zip_content.get("directories"))
                 if print_files:
-                    self.list_files(zip_content.get("files"))
+                    self.list_files(zip_content.get("files"), display_file_hashes=False)
                 return
 
             # normal directories
@@ -386,7 +459,7 @@ class RiosCLI(cmd.Cmd):
                 if perform_matching and match_query:
                     files = AutoCompletion.matches_of(files, match_query,
                                                       completion_mode=AutoCompletion.MODE_MATCH_ANY)
-                self.list_files(files)
+                self.list_files(files, display_file_hashes=calculate_hashes)
         except Exception as e:
             self.__on_error(e)
 
@@ -509,7 +582,7 @@ class RiosCLI(cmd.Cmd):
 
     def complete_copy(self, text, line, begidx, endidx):
         del begidx, endidx
-        AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
+        return AutoCompletion.path(get_latest_existing_path(self.current_directory, line), text)
 
     def do_move(self, line):
         """Moves a file or directory (and its contents)."""
@@ -1030,13 +1103,13 @@ class RiosCLI(cmd.Cmd):
 
     def do_alias(self, line):
         """Creates an alias for a command. Usage: 'alias <add/remove> <command> <alias-for-command>'"""
-        # TODO: make persistent by creating a alias.map file in the .config folder
         try:
             args = line.split()
             if not args:
                 raise Exception("This command requires an argument.")
 
             cmd_type = args.pop(0).lower()
+
             if cmd_type == "add":
                 command, alias = args
                 if command not in self.existing_commands:
@@ -1047,6 +1120,7 @@ class RiosCLI(cmd.Cmd):
                     raise NameError(f"Couldn't create alias. Alias '{alias}' already exists for command '{command}'.")
 
                 self.alias_map[command].append(alias)
+
             elif cmd_type == "remove":
                 command, alias = args
                 if command not in self.existing_commands:
@@ -1055,6 +1129,7 @@ class RiosCLI(cmd.Cmd):
                     raise NameError(f"Alias '{alias}' not found for command '{command}'.")
 
                 self.alias_map[command].remove(alias)
+
             elif cmd_type == "list":
                 if len(self.alias_map.keys()) > 0:
                     headers = ["Command", "Aliases"]
@@ -1062,6 +1137,7 @@ class RiosCLI(cmd.Cmd):
                     print(tabulate(rows, headers=headers, tablefmt="datarow"))
                 else:
                     print("It's empty.")
+
             else:
                 if len(args) != 3:
                     raise Exception("Incorrect format. Usage: 'alias <add/remove> <command> <alias-for-command>'")
