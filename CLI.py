@@ -15,15 +15,13 @@ from tabulate import tabulate
 from etc.pepes import *
 from etc.utils import truncate_filename, AutoCompletion, is_integer, playsound_deferred, FuzzyMatcher, \
     get_latest_existing_path
-from games.horse_racing import HorseRace
 from services import youtube, anime, file_system, com, processes, web_searcher, local_searcher, \
     history_manager, cache_directory
-from services.cursive.display import TextPane, MusicVisualizer
+from services.cursive.display import TextPane
 from services.cursive.input import ListMenu, SliderMenu, InputMenu
 from services.inet import Server
 from services.internal import SerializedEncoder, CommandArgsParser
 from services.internal.config import Config
-from services.music import MusicPlayer, music_player
 from services.osys import AudioService
 from services.osys.fs import File
 from services.osys.info import display_sysinfo
@@ -411,7 +409,7 @@ class RiosCLI(cmd.Cmd):
                                        AutoCompletion.TYPE_DIRECTORIES)
         except FileNotFoundError:
             # TODO: fix (in AutoCompletion.path)
-            # gets raised when reserved namespaces are trying to be read or used
+            #  gets raised when reserved namespaces are trying to be read or used
             return []
 
     def do_ls(self, line):
@@ -804,58 +802,6 @@ class RiosCLI(cmd.Cmd):
         subcommands = ["--verbose", "--refresh"]
         return AutoCompletion.matches_of(subcommands, text)
 
-    def do_music(self, subcommand):
-        """Opens music player. Currently only playlist support."""
-        print("WIP!")
-        print(music_pepe)
-
-        if subcommand != "":
-            if subcommand == "pause":
-                music_player.pause()
-            elif subcommand == "stop":
-                music_player.stop()
-            elif subcommand == "resume" or subcommand == "play":
-                music_player.resume()
-            elif subcommand == "playing":
-                print(f"{Fore.GREEN}Currently playing: {Fore.WHITE}{music_player.now_playing.name}")
-            elif subcommand == "visualizer":
-                # TODO
-                print("Experimental, not ready for use... ")
-
-                visualizer = MusicVisualizer()
-                visualizer.start_visualization()
-                visualizer.close_stream()
-            else:
-                self.default(subcommand)
-            return
-
-        # look for available playlists
-        playlists = file_system.get_directories_in_directory(os.path.join(os.path.expanduser("~/Music"), "Playlists"))
-        if not playlists:
-            print(f"{Fore.RED}No playlists found.")
-            return
-
-        # let the user pick a playlist
-        playlist_name = ListMenu.spawn(playlists, title="Choose a playlist:")
-        if not playlist_name:
-            return
-
-        # stop current music before continuing
-        if music_player.now_playing:
-            music_player.stop()
-
-        # load & play the selected playlist
-        playlist = MusicPlayer.load_playlist_by_name(playlist_name)
-        print(
-            f"{Fore.GREEN}Picked playlist {Fore.WHITE}{playlist.name}{Fore.GREEN} with {Fore.WHITE}{len(playlist.songs)}{Fore.GREEN} song(s)."
-        )
-        music_player.play_playlist(playlist)
-
-    def complete_music(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        subcommands = ["pause", "stop", "resume", "play", "playing", "visualizer"]
-        return AutoCompletion.matches_of(subcommands, text)
-
     def do_config(self, _):
         """Opens config editor."""
         # select section
@@ -1028,43 +974,6 @@ class RiosCLI(cmd.Cmd):
                 print("No connections to COM port(s).")
         else:
             self.default(subcommand)
-
-    def do_horserace(self, line):
-        """Horse races! Parameter can set the amount of horses (default=5)."""
-        parser = CommandArgsParser(line)
-        no_sound = parser.is_arg_present("silent")
-        horses_count_str = parser.get_value_of_arg("horses")
-
-        if not horses_count_str:
-            horses_count = 5  # default number of horses
-        elif not is_integer(horses_count_str):
-            self.default(line)
-            return
-        else:
-            horses_count = int(horses_count_str)
-
-        try:
-            race = HorseRace(horses_count)
-
-            if not no_sound:
-                horse_sound_wav = os.path.join(self.script_wd, "res", "horse.wav")
-                playsound_deferred(horse_sound_wav)
-
-            race.start()
-            print(
-                f"\n{Fore.GREEN}{race.winner} (no. {race.winning_number}) came out on top as the best of {horses_count} horses!"
-            )
-        except AttributeError as e:
-            print(f"{Fore.RED}{e}")
-        except Exception as yeah_we_messed_up:
-            self.__on_error(yeah_we_messed_up)
-
-    def complete_horserace(self, text, line, begidx, endidx):
-        del line, begidx, endidx
-        return AutoCompletion.matches_of(["--silent", "horses <amount>"], text)
-
-    def do_blackjack(self, line):
-        print("TODO!")
 
     def do_search(self, query):
         """Searches a specified place for something to match the given query."""

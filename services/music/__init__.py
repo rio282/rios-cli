@@ -6,12 +6,14 @@ from typing import Optional
 
 import pygame
 from colorama import Fore
+from deprecation import deprecated
 
 from services import file_system
 from services.music.playlist import Playlist
 from services.music.song import Song
 
 
+@deprecated
 class MusicPlayer:
     def __init__(self):
         self.now_playing: Optional[Song] = None

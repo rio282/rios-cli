@@ -3,9 +3,12 @@ import random
 from time import sleep
 from typing import Optional, List, Final
 
+from deprecation import deprecated
+
 from . import _faker_instance
 
 
+@deprecated
 class Horse:
     def __init__(self, name: Optional[str] = None):
         self.name: Final[str] = name if name else _faker_instance.first_name_female()
@@ -15,6 +18,7 @@ class Horse:
         return self.name
 
 
+@deprecated
 class HorseRace:
     def __init__(self, horses: int = 5, update_delay: float = 1 / 15):
         self.horses: Final[List[Horse]] = [Horse() for _ in range(horses)]
