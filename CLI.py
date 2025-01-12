@@ -1,4 +1,5 @@
 import cmd
+import hashlib
 import json
 import os
 import shutil
@@ -410,7 +411,8 @@ class RiosCLI(cmd.Cmd):
         except FileNotFoundError:
             # TODO: fix (in AutoCompletion.path)
             #  gets raised when reserved namespaces are trying to be read or used
-            return []
+            # return []
+            raise
 
     def do_ls(self, line):
         """Lists the files and directories in a directory. Options: [--cache, --chashes, --file(s), --dir(s), --match <QUERY>]"""
@@ -1061,6 +1063,15 @@ class RiosCLI(cmd.Cmd):
         commands = self.existing_commands.copy()
         commands.extend(["add", "remove", "list"])
         return AutoCompletion.matches_of(commands, text)
+
+    def do_hash(self, line):
+        """Prints the (sha256) hash of the given string"""
+        if not line:
+            print(f"{Fore.RED}Empty.")
+            return
+
+        hashed = hashlib.sha256(line.strip().encode("ascii")).hexdigest()
+        print(f"Hash (SHA256): {Fore.GREEN}{hashed}")
 
     def do_server(self, line):
         parser = CommandArgsParser(line)
